@@ -1,0 +1,22 @@
+{
+  "name": "@dfhl/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts --port 2567",
+    "build": "tsup src/index.ts --format esm --out-dir dist --clean --target node20 --sourcemap"
+  },
+  "dependencies": {
+    "@colyseus/core": "0.16.x",
+    "@colyseus/schema": "^3.0.76",
+    "@colyseus/ws-transport": "0.16.x",
+    "@dfhl/shared": "*",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsup": "^8.5.1"
+  }
+}

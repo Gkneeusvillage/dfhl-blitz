@@ -1,0 +1,35 @@
+{
+  "name": "dfhl-blitz",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DFHL Blitz - online 3-on-3 arcade hockey for the DFHL fantasy league",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm run dev -w @dfhl/server",
+    "dev:client": "npm run dev -w @dfhl/client",
+    "build": "npm run build -w @dfhl/client && npm run build -w @dfhl/server",
+    "build:rosters": "tsx tools/build-rosters.ts",
+    "start": "node server/dist/index.js",
+    "typecheck": "tsc -p shared/tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit && tsc -p tools/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "botmatch": "tsx tools/botmatch.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "concurrently": "^10.0.4",
+    "csv-parse": "^7.0.1",
+    "tsx": "^4.23.1",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
