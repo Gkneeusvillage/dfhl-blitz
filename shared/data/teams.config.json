@@ -1,0 +1,102 @@
+{
+  "teams": {
+    "Det": {
+      "code": "Det",
+      "displayName": "Detroit Red Wings",
+      "abbreviation": "DET",
+      "primaryColor": "#e8112d",
+      "secondaryColor": "#ffffff"
+    },
+    "TSP": {
+      "code": "TSP",
+      "displayName": "Toronto St. Pats",
+      "abbreviation": "TSP",
+      "primaryColor": "#2e9e4f",
+      "secondaryColor": "#f4f4f0"
+    },
+    "HFD": {
+      "code": "HFD",
+      "displayName": "Hartford Whalers",
+      "abbreviation": "HFD",
+      "primaryColor": "#00bcd4",
+      "secondaryColor": "#10243a"
+    },
+    "TOA": {
+      "code": "TOA",
+      "displayName": "Toronto Arenas",
+      "abbreviation": "TOA",
+      "primaryColor": "#1f4fd8",
+      "secondaryColor": "#ffd23f"
+    },
+    "PP": {
+      "code": "PP",
+      "displayName": "Pittsburgh Penguins",
+      "abbreviation": "PIT",
+      "primaryColor": "#f7b500",
+      "secondaryColor": "#101010"
+    },
+    "Jets": {
+      "code": "Jets",
+      "displayName": "Winnipeg Jets",
+      "abbreviation": "WPG",
+      "primaryColor": "#0e1b45",
+      "secondaryColor": "#8fa3cc"
+    },
+    "QUE": {
+      "code": "QUE",
+      "displayName": "Quebec Nordiques",
+      "abbreviation": "QUE",
+      "primaryColor": "#8fb4ff",
+      "secondaryColor": "#0b2e52"
+    },
+    "SJF": {
+      "code": "SJF",
+      "displayName": "San Jose Sharks",
+      "abbreviation": "SJS",
+      "primaryColor": "#14181d",
+      "secondaryColor": "#00a8a8"
+    },
+    "HC": {
+      "code": "HC",
+      "displayName": "Hamilton Tigers",
+      "abbreviation": "HAM",
+      "primaryColor": "#ff6a13",
+      "secondaryColor": "#16130f"
+    },
+    "CGS": {
+      "code": "CGS",
+      "displayName": "California Golden Seals",
+      "abbreviation": "CGS",
+      "primaryColor": "#7a3ff2",
+      "secondaryColor": "#ffd166"
+    },
+    "Yotes": {
+      "code": "Yotes",
+      "displayName": "Arizona Coyotes",
+      "abbreviation": "ARI",
+      "primaryColor": "#6b1f2e",
+      "secondaryColor": "#d9c9a3"
+    },
+    "CBO": {
+      "code": "CBO",
+      "displayName": "Columbus Blue Jackets",
+      "abbreviation": "CBJ",
+      "primaryColor": "#9aa5b1",
+      "secondaryColor": "#0b2b52"
+    },
+    "MW": {
+      "code": "MW",
+      "displayName": "Manitoba Wild",
+      "abbreviation": "MAN",
+      "primaryColor": "#d81b8f",
+      "secondaryColor": "#1b1020"
+    },
+    "MNS": {
+      "code": "MNS",
+      "displayName": "Minnesota North Stars",
+      "abbreviation": "MNS",
+      "primaryColor": "#16a34a",
+      "secondaryColor": "#f5c518"
+    }
+  }
+}

@@ -88,6 +88,13 @@ export const SKATER = {
 
   /** Skater-vs-skater separation impulse when not checking. */
   bumpRestitution: 0.4,
+
+  /** Distance from a carrier's center to the puck sitting on their stick. */
+  stickReach: 2.4,
+  /** Skaters die into the boards; only the puck comes off them with life. */
+  boardsRestitution: 0.25,
+  /** Velocity retention while knocked down — a fallen skater slides to a stop fast. */
+  stunFriction: 0.86,
 } as const;
 
 export const CHECKING = {
@@ -107,6 +114,11 @@ export const CHECKING = {
   /** Chance a poke check strips the puck, scaled by the defender's `defense`. */
   pokeStripChanceLow: 0.25,
   pokeStripChanceHigh: 0.7,
+
+  /** Inside this distance the action button throws a body check instead of a poke. */
+  checkRadius: 4.2,
+  /** Speed given to a puck knocked loose by a check or a strip. */
+  strippedPuckSpeed: 0.35,
 } as const;
 
 export const SHOOTING = {
@@ -130,6 +142,15 @@ export const SHOOTING = {
   oneTimerWindowTicks: 22,
   oneTimerSpeedBonus: 1.22,
   oneTimerAccuracyBonus: 0.6,
+
+  /** Shooters pick the corner away from the goalie, this far from the net's center line. */
+  aimCornerFraction: 0.86,
+  /** Ticks before a skater may shoot or pass again after releasing the puck. */
+  releaseCooldownTicks: 10,
+  /** A held shot fires itself here, so a stuck button can never stall the match. */
+  maxHoldTicks: 96,
+  /** Below this travel distance the shooter aims straight at the puck's line to the net. */
+  minAimDistance: 4,
 } as const;
 
 export const PASSING = {
@@ -141,6 +162,14 @@ export const PASSING = {
   /** Half-angle of the cone searched for a pass target. */
   targetConeRadians: 1.1,
   maxTargetDistance: 90,
+
+  /** Cap on how far ahead a pass leads a moving target. */
+  maxLeadTicks: 45,
+  /**
+   * A puck arriving faster than this counts as a *received pass* rather than a
+   * puck the skater simply skated up to, and arms the one-timer window.
+   */
+  receptionSpeed: 0.35,
 } as const;
 
 export const GOALIE = {
@@ -167,6 +196,31 @@ export const GOALIE = {
   /** Chance the goalie smothers the puck for a whistle, interpolated by `reboundControl`. */
   freezeChanceLow: 0.1,
   freezeChanceHigh: 0.42,
+
+  /** Resting distance in front of the goal line. */
+  restDepth: 2,
+  /** A loose puck moving faster than this is treated as a shot worth reacting to. */
+  shotDetectSpeed: 0.7,
+  /** The goalie commits to a lunge once the shot is this close in ticks of travel. */
+  lungeTriggerTicks: 22,
+  /** A lunge moves the goalie this much faster than normal tracking. */
+  lungeSpeedMultiplier: 3,
+  /**
+   * Feet of error in the goalie's read of where a shot will cross the goal line,
+   * interpolated by `reflexes`. This — not raw reach — is what makes a goalie beatable.
+   */
+  readErrorLow: 6.4,
+  readErrorHigh: 1.5,
+  /** The goalie never strays further than this from the net's center line. */
+  maxLateralOffset: 5.5,
+  /** Beyond this puck distance the goalie stops challenging and settles on the post. */
+  challengeRange: 46,
+  /** Only pucks slower than this can be smothered for a whistle. */
+  freezeMaxSpeed: 1.4,
+  /** Random deflection applied to rebounds, radians either way. */
+  reboundSpread: 0.9,
+  /** Rebounds never die in the crease; they come off at least this fast. */
+  reboundMinSpeed: 0.35,
 } as const;
 
 export const ON_FIRE = {
@@ -192,6 +246,31 @@ export const MATCH = {
   shootoutRounds: 3,
   /** Ticks a disconnected seat is held open for reconnection. */
   reconnectGraceTicks: TICK_RATE * 30,
+
+  /** Hold after a goalie freezes the puck, before the next faceoff is set. */
+  whistleHoldTicks: TICK_RATE * 1.5,
+  /** How long one shootout attempt may run before it is waved off. */
+  shootoutAttemptTicks: TICK_RATE * 9,
+} as const;
+
+/** Faceoff geometry and the puck-drop contest. */
+export const FACEOFF = {
+  /**
+   * Where each of the three skaters lines up, as an offset back toward their own
+   * end from the faceoff dot. Index 0 takes the draw.
+   */
+  formation: [
+    { x: 4, y: 0 },
+    { x: 15, y: -17 },
+    { x: 27, y: 9 },
+  ],
+  /** Speed the puck is nudged toward the side that wins the draw. */
+  drawNudgeSpeed: 0.42,
+  /** Attribute weight of the draw: the rest is the rng coin flip. */
+  drawSkillWeight: 0.35,
+  /** Where off-ice skaters wait. Inside the boards, so nothing ever reads out of bounds. */
+  benchY: 38,
+  benchSpacingX: 9,
 } as const;
 
 export const AI = {
@@ -207,6 +286,19 @@ export const AI = {
   passUrge: 0.012,
   /** Distance from the opposing net inside which the AI will shoot. */
   shootRange: 55,
+
+  /** The AI burns turbo once it is at least this far from where it wants to be. */
+  turboDistance: 22,
+  /** Turbo is saved for chases; the AI will not engage below this meter level. */
+  turboMinMeter: 0.35,
+  /** Chance per tick the AI releases a shot when it is in range with a lane. */
+  shootUrge: 0.11,
+  /** Chance per tick a defender throws a check or reaches in with a poke. */
+  checkUrge: 0.09,
+  /** How far off the puck's line to the net a supporting AI skater sets up. */
+  supportOffset: 16,
+  /** A carrier with an opponent this close is considered pressured and looks to move it. */
+  pressureDistance: 7,
 } as const;
 
 export const NETWORK = {
