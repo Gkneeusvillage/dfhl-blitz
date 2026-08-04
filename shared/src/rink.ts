@@ -138,12 +138,21 @@ export function isPuckInNet(
     : puckX - puckRadius > goalX;
 }
 
-/** The two goal posts for the net that `defendingSide` guards, as circles. */
+/**
+ * The two goal posts for the net that `defendingSide` guards, as circles.
+ *
+ * Their centers sit one radius OUTSIDE the mouth so the inner edge of each post
+ * lands exactly on `goalHalfWidth`. Centering them on the mouth edge instead
+ * would block the outer 0.35 ft of net on each side while `isPuckInNet` still
+ * counted that band as a goal — the puck would be waved off by a post it should
+ * have missed.
+ */
 export function goalPosts(defendingSide: TeamSide): Array<{ x: number; y: number; radius: number }> {
   const goalX = defendingGoalX(defendingSide);
+  const offset = RINK.goalHalfWidth + RINK.postRadius;
   return [
-    { x: goalX, y: -RINK.goalHalfWidth, radius: 0.35 },
-    { x: goalX, y: RINK.goalHalfWidth, radius: 0.35 },
+    { x: goalX, y: -offset, radius: RINK.postRadius },
+    { x: goalX, y: offset, radius: RINK.postRadius },
   ];
 }
 

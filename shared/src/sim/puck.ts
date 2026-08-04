@@ -24,6 +24,14 @@ export type PuckOutcome =
 const NO_OUTCOME: PuckOutcome = { kind: 'none' };
 
 /**
+ * Gap left between the puck and a post after a deflection, in feet.
+ *
+ * Small enough to be invisible, large enough to survive the rounding in the next
+ * tick's sweep so the puck can never re-enter the contact circle it just left.
+ */
+const POST_SEPARATION = 1e-3;
+
+/**
  * Does the segment cross a goal line between the posts, travelling in the
  * direction an attacker would be shooting? Returns the crossing parameter, or -1.
  */
@@ -64,20 +72,20 @@ function firstPostHit(
   y0: number,
   dx: number,
   dy: number,
-): { t: number; x: number; y: number } | null {
+): { t: number; x: number; y: number; radius: number } | null {
   let bestT = Infinity;
-  let hit: { x: number; y: number } | null = null;
+  let hit: { x: number; y: number; radius: number } | null = null;
 
   for (const side of ['home', 'away'] as const) {
     for (const post of goalPosts(side)) {
       const t = sweepPointCircle(x0, y0, dx, dy, post.x, post.y, post.radius + PUCK.radius);
       if (t >= 0 && t < bestT) {
         bestT = t;
-        hit = { x: post.x, y: post.y };
+        hit = { x: post.x, y: post.y, radius: post.radius };
       }
     }
   }
-  return hit === null ? null : { t: bestT, x: hit.x, y: hit.y };
+  return hit === null ? null : { t: bestT, ...hit };
 }
 
 /**
@@ -100,10 +108,13 @@ export function stepLoosePuck(ctx: SimContext): PuckOutcome {
   const y1 = y0 + dy;
 
   // --- goalies -------------------------------------------------------------
+  // Widest possible contact circle; resolveGoalieSave decides whether the goalie
+  // is actually able to take that much of the path away this tick.
+  const goalieMaxRadius = PUCK.radius + GOALIE.radius + GOALIE.lungeReachHigh;
   let goalieT = Infinity;
   let goalieSide: TeamSide | null = null;
   for (const goalie of state.goalies) {
-    const contact = sweepPointCircle(x0, y0, dx, dy, goalie.x, goalie.y, PUCK.radius + GOALIE.radius);
+    const contact = sweepPointCircle(x0, y0, dx, dy, goalie.x, goalie.y, goalieMaxRadius);
     if (contact >= 0 && contact < goalieT) {
       goalieT = contact;
       goalieSide = goalie.side;
@@ -117,25 +128,50 @@ export function stepLoosePuck(ctx: SimContext): PuckOutcome {
 
   const postT = post === null ? Infinity : post.t;
 
-  // Earliest event wins.
+  // Earliest event wins. A goalie who cannot reach the shot returns no contact,
+  // and the puck carries on to the post and goal-line tests below.
   if (goalieSide !== null && goalieT <= postT && goalieT <= goalT) {
     const result = resolveGoalieSave(ctx, goalieFor(state, goalieSide), x0, y0, x1, y1);
     if (result.frozen) return { kind: 'freeze' };
-    return { kind: 'save' };
+    if (result.stopped) return { kind: 'save' };
   }
 
   if (post !== null && postT <= goalT) {
-    puck.x = x0 + dx * postT;
-    puck.y = y0 + dy * postT;
-    const nx = puck.x - post.x;
-    const ny = puck.y - post.y;
+    const contactX = x0 + dx * postT;
+    const contactY = y0 + dy * postT;
+    let nx = contactX - post.x;
+    let ny = contactY - post.y;
     const len = Math.sqrt(nx * nx + ny * ny) || 1;
-    reflect(puck, nx / len, ny / len, PUCK.boardsRestitution);
+    nx /= len;
+    ny /= len;
+
+    // Seat the puck just clear of the post rather than exactly on it. Landing on
+    // the contact circle leaves the next tick's sweep starting inside it, and
+    // sweepPointCircle reports t=0 for that — which pins the puck at x0 forever,
+    // spraying a post event every tick until somebody skates over and collects it.
+    const clearance = post.radius + PUCK.radius + POST_SEPARATION;
+    puck.x = post.x + nx * clearance;
+    puck.y = post.y + ny * clearance;
+
+    reflect(puck, nx, ny, PUCK.boardsRestitution);
+
+    // Carry the puck through the rest of the tick so a post hit costs no travel,
+    // then let it settle against the boards it may have been deflected into.
+    const remaining = 1 - postT;
+    if (remaining > 0) {
+      puck.x += puck.vx * remaining;
+      puck.y += puck.vy * remaining;
+      resolveBoardsCollision(puck, PUCK.radius, PUCK.boardsRestitution);
+    }
+
+    applyFriction(puck, PUCK.friction);
+    clampSpeed(puck, PUCK.maxSpeed);
+
     ctx.events.push({
       type: 'post',
       tick: state.tick,
-      x: puck.x,
-      y: puck.y,
+      x: contactX,
+      y: contactY,
       power: speedOf(puck),
     });
     return NO_OUTCOME;

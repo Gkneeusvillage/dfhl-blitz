@@ -11,6 +11,12 @@
  *
  * Real NHL skaters top out around 20-22 mph (~31 ft/s). Arcade hockey runs hot,
  * so the defaults here are deliberately faster than life.
+ *
+ * NOT HERE: the ratings curve. How a Fantrax Score becomes a 0-99 attribute —
+ * the floor, the exponent, the position weights, the jitter — lives in
+ * tools/build-rosters.ts, because nothing at runtime reads it: it shapes the
+ * data once and the sim only ever sees the result. Retuning it means editing
+ * that file and re-running `npm run build:rosters`, not reloading the game.
  */
 
 /** Simulation frequency. The server steps at this rate; clients predict at this rate. */
@@ -35,6 +41,12 @@ export const RINK = {
   blueLineX: 25,
   /** Net mouth half-width; the mouth spans y in [-3, 3]. */
   goalHalfWidth: 3,
+  /**
+   * Goal post radius. The posts sit OUTSIDE the mouth (centers at
+   * goalHalfWidth + postRadius), so the full 6 ft opening stays available —
+   * centering them on the mouth edge would quietly eat 0.35 ft of net per side.
+   */
+  postRadius: 0.35,
   /** How far the net extends behind the goal line. */
   goalDepth: 4,
   /** Radius of the center-ice faceoff circle (cosmetic). */
@@ -143,8 +155,12 @@ export const SHOOTING = {
   oneTimerSpeedBonus: 1.22,
   oneTimerAccuracyBonus: 0.6,
 
-  /** Shooters pick the corner away from the goalie, this far from the net's center line. */
-  aimCornerFraction: 0.86,
+  /**
+   * Shooters pick the corner away from the goalie, this far from the net's center
+   * line. The posts are circles centred on the goal line, so aiming much beyond
+   * this rings iron instead of finding twine.
+   */
+  aimCornerFraction: 0.64,
   /** Ticks before a skater may shoot or pass again after releasing the puck. */
   releaseCooldownTicks: 10,
   /** A held shot fires itself here, so a stuck button can never stall the match. */
@@ -209,8 +225,14 @@ export const GOALIE = {
    * Feet of error in the goalie's read of where a shot will cross the goal line,
    * interpolated by `reflexes`. This — not raw reach — is what makes a goalie beatable.
    */
-  readErrorLow: 6.4,
-  readErrorHigh: 1.5,
+  readErrorLow: 5.2,
+  readErrorHigh: 1.1,
+  /**
+   * Fraction of the goalie's body that still stops a shot they never read.
+   * A hard zero here turns the reaction window into a cliff: every shot from
+   * inside a fixed radius scores and every shot outside it does not.
+   */
+  flatFootedFactor: 0.42,
   /** The goalie never strays further than this from the net's center line. */
   maxLateralOffset: 5.5,
   /** Beyond this puck distance the goalie stops challenging and settles on the post. */
@@ -244,6 +266,12 @@ export const MATCH = {
   goalCelebrationTicks: TICK_RATE * 3,
   intermissionTicks: TICK_RATE * 5,
   shootoutRounds: 3,
+  /**
+   * Sudden-death shootout rounds are unbounded in real hockey. A match that can
+   * never end is not an option for a game loop, so a shootout still level here is
+   * called and the scoreline stands as a draw.
+   */
+  shootoutMaxRounds: 12,
   /** Ticks a disconnected seat is held open for reconnection. */
   reconnectGraceTicks: TICK_RATE * 30,
 
