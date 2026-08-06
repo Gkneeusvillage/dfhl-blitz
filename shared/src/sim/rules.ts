@@ -7,12 +7,13 @@
  */
 
 import { FACEOFF, GOALIE, MATCH, ON_FIRE, PUCK, RINK, TICK_RATE } from '../tuning.js';
-import { attackDirection, clamp, defendingGoalX } from '../rink.js';
+import { attackDirection, clamp, defendingGoalX, distance } from '../rink.js';
 import { otherSide } from '../types.js';
 import type { GameSimState, SkaterSimState, TeamSide } from '../types.js';
 import type { SimContext } from './context.js';
 import { goalieFor, skaterAttrs, skaterById } from './context.js';
 import { clearPendingAssist, pendingAssist } from './actions.js';
+import { humanInputFor } from './control.js';
 
 /** Regulation is over and we are into extra time. */
 export function isOvertimePeriod(state: GameSimState, periods: number): boolean {
@@ -107,6 +108,8 @@ export function startFaceoff(ctx: SimContext, changeLines: boolean): void {
   state.puck.lastTouchedBy = null;
   state.puck.lastTouchSide = null;
   state.puck.pickupCooldown = 0;
+  state.puck.oneTimerTicks = 0;
+  state.puck.strandedTicks = 0;
 
   state.phase = 'faceoff';
   state.phaseTimer = MATCH.faceoffHoldTicks;
@@ -125,11 +128,46 @@ function drawTaker(ctx: SimContext, side: TeamSide): SkaterSimState | null {
 }
 
 /**
+ * Count how long each seated skater has been leaning on the action button while
+ * the puck is held for the drop.
+ *
+ * `windup` already means exactly this — ticks the button has been held — so this
+ * is the same counter it always was, just running through a phase in which no
+ * action can resolve. Run only during 'faceoff'; `formUp` zeroes it, so every
+ * draw starts the count from nothing and a button held across a stoppage still
+ * reads as held.
+ */
+export function trackFaceoffPresses(ctx: SimContext): void {
+  for (const skater of ctx.state.skaters) {
+    const input = humanInputFor(ctx, skater);
+    if (input === null) continue;
+    if (input.shoot || input.pass) skater.windup++;
+    else skater.windup = 0;
+  }
+}
+
+/**
+ * What a seat's press is worth on this draw, as a shift in the home side's
+ * chance, signed for `side`.
+ *
+ * A press, not a held button. Holding is now the worst of the three options,
+ * which is what makes this a cue and not a dominant strategy.
+ */
+function pressEdge(ctx: SimContext, taker: SkaterSimState | null, side: TeamSide): number {
+  if (taker === null) return 0;
+  const input = humanInputFor(ctx, taker);
+  if (input === null || (!input.shoot && !input.pass)) return 0;
+  const onCue = taker.windup <= FACEOFF.drawPressWindowTicks;
+  const magnitude = onCue ? FACEOFF.drawPressWeight : -FACEOFF.drawJumpPenalty;
+  return side === 'home' ? magnitude : -magnitude;
+}
+
+/**
  * Drop the puck.
  *
- * The draw is mostly a coin flip weighted by the two centers, plus a bonus for a
- * seat that had the button down on the drop tick — the arcade "press on the cue"
- * moment, resolved without any client-side minigame state.
+ * The draw is mostly a coin flip weighted by the two centers, plus the arcade
+ * "press on the cue" moment — resolved out of `windup`, so it needs no
+ * client-side minigame state and no previous-input field on GameSimState.
  */
 export function dropPuck(ctx: SimContext): void {
   const { state } = ctx;
@@ -138,14 +176,16 @@ export function dropPuck(ctx: SimContext): void {
 
   const homeSkill = home ? skaterAttrs(ctx.config, home).checking : 50;
   const awaySkill = away ? skaterAttrs(ctx.config, away).checking : 50;
-  let homeEdge = 0.5 + ((homeSkill - awaySkill) / 198) * FACEOFF.drawSkillWeight;
+  const homeEdge =
+    0.5 +
+    ((homeSkill - awaySkill) / 198) * FACEOFF.drawSkillWeight +
+    pressEdge(ctx, home, 'home') +
+    pressEdge(ctx, away, 'away');
 
-  for (const seat of state.seats) {
-    if (!seat.connected) continue;
-    const input = ctx.inputs[seat.id];
-    if (input === undefined || (!input.shoot && !input.pass)) continue;
-    homeEdge += seat.side === 'home' ? FACEOFF.drawSkillWeight : -FACEOFF.drawSkillWeight;
-  }
+  // Spent: a windup carried out of the faceoff would turn a draw press into free
+  // shot power on the first tick of play.
+  if (home !== null) home.windup = 0;
+  if (away !== null) away.windup = 0;
 
   const winner: TeamSide = ctx.rng.next() < clamp(homeEdge, 0.05, 0.95) ? 'home' : 'away';
   const taker = winner === 'home' ? home : away;
@@ -171,33 +211,29 @@ export function dropPuck(ctx: SimContext): void {
  * Apply a goal to the heat streaks.
  *
  * "Consecutive" is per team: any other teammate scoring ends your run, so at most
- * one skater a side is ever lit. While `onFire` is true, `streakGoals` is the
- * countdown of remaining heat rather than a goal count — see the STATE FIELD
- * OVERLOADS note in sim/index.ts.
+ * one skater a side is ever lit.
  */
 function updateStreaks(ctx: SimContext, scorer: SkaterSimState | null, scoringSide: TeamSide): void {
   if (!ctx.config.onFireEnabled) return;
 
   for (const skater of ctx.state.skaters) {
-    if (skater.side !== scoringSide) {
-      // Conceding puts the fire out.
+    // Conceding puts the fire out; so does a teammate taking over the scoring.
+    if (skater.side !== scoringSide || skater !== scorer) {
       skater.onFire = false;
-      skater.streakGoals = 0;
-    } else if (skater !== scorer) {
-      skater.onFire = false;
+      skater.onFireTicks = 0;
       skater.streakGoals = 0;
     }
   }
 
   if (scorer === null) return;
+  scorer.streakGoals++;
   if (scorer.onFire) {
-    scorer.streakGoals = ON_FIRE.durationTicks;
+    scorer.onFireTicks = ON_FIRE.durationTicks;
     return;
   }
-  scorer.streakGoals++;
   if (scorer.streakGoals >= ON_FIRE.goalsRequired) {
     scorer.onFire = true;
-    scorer.streakGoals = ON_FIRE.durationTicks;
+    scorer.onFireTicks = ON_FIRE.durationTicks;
     ctx.events.push({
       type: 'onFire',
       tick: ctx.state.tick,
@@ -256,12 +292,57 @@ export function scoreGoal(ctx: SimContext, concedingSide: TeamSide): void {
 }
 
 /**
- * A whistle that is not a goal — a goalie freeze. Straight to the next draw with
- * a shorter hold than a celebration, because nothing happened worth watching.
+ * A whistle that is not a goal — a goalie freeze, or a puck nobody can get to.
+ * Straight to the next draw with a shorter hold than a celebration, because
+ * nothing happened worth watching.
  */
 export function stopPlay(ctx: SimContext): void {
   startFaceoff(ctx, true);
   ctx.state.phaseTimer = MATCH.whistleHoldTicks;
+}
+
+/**
+ * The dead-puck whistle.
+ *
+ * `sim/control.ts` keeps the AI's chaser out of a seat's hands so a retrieval can
+ * actually finish, and that is what makes this rare. It is still needed, because
+ * the chaser reservation has nothing to reserve when every skater on the ice is
+ * seated — six held sticks and nobody goes and gets it — and because a puck can
+ * come to rest in a spot the geometry keeps everyone a foot too far from, which
+ * was measured behind the home net at (-89.95, -3.48).
+ *
+ * Tracked by POSITION rather than by speed: a puck pinned against geometry keeps
+ * its velocity while never actually moving, and a speed test calls that healthy.
+ * `PUCK.pickupRadius` is the reach because that is exactly the distance inside
+ * which `resolvePickups` would already have handed the puck to somebody, so a
+ * skater who is within it is not stranded, they are collecting.
+ *
+ * @returns true if the whistle went and play stopped.
+ */
+export function checkStrandedPuck(ctx: SimContext, previousX: number, previousY: number): boolean {
+  const { state } = ctx;
+  const puck = state.puck;
+
+  let reachable = false;
+  for (const skater of state.skaters) {
+    if (!skater.onIce || skater.stun > 0) continue;
+    if (distance(skater.x, skater.y, puck.x, puck.y) <= PUCK.pickupRadius) {
+      reachable = true;
+      break;
+    }
+  }
+
+  if (puck.carrierId !== null || reachable || puck.x !== previousX || puck.y !== previousY) {
+    puck.strandedTicks = 0;
+    return false;
+  }
+
+  puck.strandedTicks++;
+  if (puck.strandedTicks < MATCH.deadPuckWhistleTicks) return false;
+
+  ctx.events.push({ type: 'whistle', tick: state.tick, x: puck.x, y: puck.y });
+  stopPlay(ctx);
+  return true;
 }
 
 export function finishMatch(ctx: SimContext): void {
@@ -308,12 +389,15 @@ function setUpShootoutAttempt(ctx: SimContext): void {
       state.puck.vx = 0;
       state.puck.vy = 0;
       state.puck.pickupCooldown = 0;
+      state.puck.oneTimerTicks = 0;
+      state.puck.strandedTicks = 0;
     } else {
       parkOffIce(state, skater);
     }
   }
 
   resetGoalies(ctx);
+  clearPendingAssist(ctx);
   state.phaseTimer = MATCH.shootoutAttemptTicks;
 }
 
@@ -338,14 +422,22 @@ export function endShootoutAttempt(ctx: SimContext, scored: boolean): void {
 
   const pairsComplete = state.shootoutRound % 2 === 0;
   const roundsTaken = state.shootoutRound / 2;
-  if (
-    pairsComplete &&
-    roundsTaken >= MATCH.shootoutRounds &&
-    state.shootoutScore.home !== state.shootoutScore.away
-  ) {
+  if (!pairsComplete || roundsTaken < MATCH.shootoutRounds) {
+    setUpShootoutAttempt(ctx);
+    return;
+  }
+
+  if (state.shootoutScore.home !== state.shootoutScore.away) {
     const winner: TeamSide = state.shootoutScore.home > state.shootoutScore.away ? 'home' : 'away';
     // The shootout winner takes the game by one, the way a real scoreline reads.
     state.score[winner]++;
+    finishMatch(ctx);
+    return;
+  }
+
+  // The backstop: two goalies who cannot be beaten would otherwise trade rounds
+  // forever, and `stepMatch` has no way out of a phase that never terminates.
+  if (roundsTaken >= MATCH.shootoutMaxRounds) {
     finishMatch(ctx);
     return;
   }

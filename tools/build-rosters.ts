@@ -54,8 +54,16 @@ export const OUTPUT_PATH = resolve(REPO_ROOT, 'shared/data/rosters.json');
 export const RATINGS = {
   /** Everyone is playable: the worst prospect in the league still rates 40. */
   floor: 40,
-  /** Headroom above the floor. floor + span = 99, the attribute ceiling. */
-  span: 59,
+  /**
+   * Reach of the curve above the floor. Deliberately short of the 99 ceiling.
+   *
+   * Position weighting and jitter are applied *above* the curve, so a curve that
+   * peaked at the ceiling would have nowhere to put them: the elite tier flattened
+   * into a wall of 99s and McDavid came out rated maximum defensively. Stopping at
+   * 96 leaves room for a profile to exist at the top, which is the one place the
+   * differences are supposed to be most visible.
+   */
+  span: 56,
   /**
    * Sub-linear exponent. Fantrax scores bunch up in the 20s-40s, so a straight
    * line would leave two thirds of the league indistinguishable just above the
@@ -80,8 +88,11 @@ type SkaterPosition = Exclude<NhlPosition, 'G'>;
  * goalie, so the profile has to be tilted far enough to be felt through the
  * sim's lerpAttr ranges — roughly 7 points is a visible step. Each row sums to
  * about zero, so weighting redistributes ability instead of inflating it.
+ *
+ * Exported only so the suite can pin the shipped data's league-wide profile
+ * against the table it was built from; nothing at runtime reads it.
  */
-const SKATER_WEIGHTS: Record<SkaterPosition, SkaterAttributes> = {
+export const SKATER_WEIGHTS: Record<SkaterPosition, SkaterAttributes> = {
   D: { skating: -1, shooting: -8, passing: 0, checking: 6, defense: 8 },
   C: { skating: 0, shooting: 0, passing: 7, checking: -1, defense: 1 },
   LW: { skating: 2, shooting: 7, passing: 0, checking: 1, defense: -6 },
@@ -93,7 +104,31 @@ const SKATER_WEIGHTS: Record<SkaterPosition, SkaterAttributes> = {
  * rebound control is held back deliberately. Rebounds are what keep even a
  * 99-rated goalie beatable in a 3-on-3 scramble.
  */
-const GOALIE_WEIGHTS: GoalieAttributes = { reflexes: 1, positioning: 1, reboundControl: -3 };
+export const GOALIE_WEIGHTS: GoalieAttributes = { reflexes: 1, positioning: 1, reboundControl: -3 };
+
+/** Top of the curve. Everything above this belongs to the profile, not the curve. */
+const CURVE_PEAK = RATINGS.floor + RATINGS.span;
+
+/**
+ * Fold a rating that has been pushed above the curve into the headroom left
+ * between the curve's peak and the ceiling, rather than cutting it off there.
+ *
+ * Clamping did not merely cap a number, it collapsed the *differences* between
+ * one player's attributes: McDavid came out 99 checking and 99 defense, a centre
+ * rated maximum defensively, exactly where the profile is supposed to read
+ * loudest. This maps [peak, infinity) onto [peak, 99) smoothly and monotonically,
+ * so a +8 stays ahead of a +6 no matter how elite the player is, and nothing
+ * below the peak is touched at all.
+ *
+ * Deliberately algebraic rather than exponential: the committed JSON has to be
+ * byte-identical on every machine, and this is plain IEEE-754 arithmetic.
+ */
+function foldAboveCurve(value: number): number {
+  if (value <= CURVE_PEAK) return value;
+  const headroom = RATINGS.attributeMax - CURVE_PEAK;
+  const excess = value - CURVE_PEAK;
+  return CURVE_PEAK + (headroom * excess) / (excess + headroom);
+}
 
 function clamp(value: number, min: number, max: number): number {
   return value < min ? min : value > max ? max : value;
@@ -118,8 +153,10 @@ function jitterFor(playerId: string, attribute: string): number {
 }
 
 function ratingFor(playerId: string, attribute: string, overall: number, weight: number): number {
-  const weighted = Math.round(overall + weight) + jitterFor(playerId, attribute);
-  return clamp(weighted, RATINGS.attributeMin, RATINGS.attributeMax);
+  const weighted = overall + weight + jitterFor(playerId, attribute);
+  // The fold already keeps this under the ceiling; the clamp guards the floor
+  // and any future weight table wide enough to reach past it.
+  return clamp(Math.round(foldAboveCurve(weighted)), RATINGS.attributeMin, RATINGS.attributeMax);
 }
 
 function skaterAttributes(

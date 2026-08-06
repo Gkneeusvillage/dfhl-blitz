@@ -15,9 +15,9 @@ import {
   SHOOTING,
   lerpAttr,
 } from '../tuning.js';
-import { attackingGoalX, clamp, distance } from '../rink.js';
+import { attackingGoalX, clamp, collideWithBoards, distance } from '../rink.js';
 import { otherSide } from '../types.js';
-import type { PlayerInput, SkaterSimState } from '../types.js';
+import type { PlayerInput, PuckSimState, SkaterSimState } from '../types.js';
 import type { SimContext } from './context.js';
 import { goalieFor, puckCarrier, skaterAttrs, skaterById } from './context.js';
 import { speedOf, sweepClosest } from './physics.js';
@@ -25,19 +25,16 @@ import { isCarrying, knockDown, stickPointX, stickPointY } from './skater.js';
 
 // ---------------------------------------------------------------------------
 // One-timer window
-//
-// See the STATE FIELD OVERLOADS note in sim/index.ts. While the puck is carried
-// nothing can pick it up, so `puck.pickupCooldown` is dead storage; we use it to
-// count down the window in which the carrier's shot still counts as a one-timer.
 // ---------------------------------------------------------------------------
 
+/** Ticks left in which the carrier's shot still counts as a one-timer. */
 export function oneTimerTicks(ctx: SimContext): number {
   const puck = ctx.state.puck;
-  return puck.carrierId === null ? 0 : puck.pickupCooldown;
+  return puck.carrierId === null ? 0 : puck.oneTimerTicks;
 }
 
 export function armOneTimer(ctx: SimContext): void {
-  ctx.state.puck.pickupCooldown = SHOOTING.oneTimerWindowTicks;
+  ctx.state.puck.oneTimerTicks = SHOOTING.oneTimerWindowTicks;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +91,7 @@ export function releaseShot(ctx: SimContext, shooter: SkaterSimState): void {
   state.puck.vx = Math.cos(angle) * speed;
   state.puck.vy = Math.sin(angle) * speed;
   state.puck.pickupCooldown = PUCK.pickupCooldown;
+  state.puck.oneTimerTicks = 0;
   state.puck.lastTouchedBy = shooter.id;
   state.puck.lastTouchSide = shooter.side;
 
@@ -169,6 +167,7 @@ export function releasePass(ctx: SimContext, passer: SkaterSimState): boolean {
   state.puck.vx = Math.cos(angle) * speed;
   state.puck.vy = Math.sin(angle) * speed;
   state.puck.pickupCooldown = PUCK.pickupCooldown;
+  state.puck.oneTimerTicks = 0;
   state.puck.lastTouchedBy = passer.id;
   state.puck.lastTouchSide = passer.side;
 
@@ -215,6 +214,7 @@ function jarPuckLoose(ctx: SimContext, victim: SkaterSimState): void {
   state.puck.vx = victim.vx + Math.cos(angle) * CHECKING.strippedPuckSpeed;
   state.puck.vy = victim.vy + Math.sin(angle) * CHECKING.strippedPuckSpeed;
   state.puck.pickupCooldown = 0;
+  state.puck.oneTimerTicks = 0;
   ctx.events.push({
     type: 'turnover',
     tick: state.tick,
@@ -285,6 +285,27 @@ export function attemptDefensiveAction(ctx: SimContext, defender: SkaterSimState
 // ---------------------------------------------------------------------------
 
 /**
+ * Seat the puck on a carrier's stick, pulled back onto the ice.
+ *
+ * The stick reaches further than the skater's own radius, so the raw stick point
+ * can sit up to `stickReach - radius + puckRadius` = 1.3 ft through the boards.
+ * The collect tick used to skip this clamp and rely on the next tick's
+ * `attachPuckToCarrier` to fix it — which is fine for the simulation and wrong
+ * for the client, because a snapshot broadcast on exactly that tick draws the
+ * puck through the wall. Measured 1.2566 ft outside the boards at (81.93, 41.49)
+ * during a fuzz run.
+ */
+function seatPuckOnStick(puck: PuckSimState, carrier: SkaterSimState): void {
+  puck.x = stickPointX(carrier);
+  puck.y = stickPointY(carrier);
+  const contact = collideWithBoards(puck.x, puck.y, PUCK.radius);
+  if (contact.hit) {
+    puck.x += contact.nx * contact.penetration;
+    puck.y += contact.ny * contact.penetration;
+  }
+}
+
+/**
  * Hand the loose puck to whichever upright skater is closest to its path this
  * tick. Nearest-wins rather than first-in-array-wins, so home does not get a
  * systematic advantage from iteration order.
@@ -325,14 +346,13 @@ export function resolvePickups(
   state.puck.carrierId = winner.id;
   state.puck.vx = winner.vx;
   state.puck.vy = winner.vy;
-  state.puck.x = stickPointX(winner);
-  state.puck.y = stickPointY(winner);
+  seatPuckOnStick(state.puck, winner);
 
   if (wasPass && previous !== null) {
     armOneTimer(ctx);
     setPendingAssist(ctx, previous);
   } else {
-    state.puck.pickupCooldown = 0;
+    state.puck.oneTimerTicks = 0;
     if (previous === null || previous.side !== winner.side) clearPendingAssist(ctx);
   }
 
@@ -342,25 +362,19 @@ export function resolvePickups(
 
 // ---------------------------------------------------------------------------
 // Pending assist
-//
-// See the STATE FIELD OVERLOADS note in sim/index.ts: outside the shootout,
-// `state.shootoutRound` holds the array index (+1) of the skater who last fed
-// the current carrier, so a goal can be credited back to the passer.
 // ---------------------------------------------------------------------------
 
+/** Remember who fed the current carrier, so a goal can be credited back to them. */
 export function setPendingAssist(ctx: SimContext, passer: SkaterSimState): void {
-  if (ctx.state.phase === 'shootout') return;
-  ctx.state.shootoutRound = ctx.state.skaters.indexOf(passer) + 1;
+  ctx.state.assistCandidateId = passer.id;
 }
 
 export function clearPendingAssist(ctx: SimContext): void {
-  if (ctx.state.phase === 'shootout') return;
-  ctx.state.shootoutRound = 0;
+  ctx.state.assistCandidateId = null;
 }
 
 export function pendingAssist(ctx: SimContext): SkaterSimState | null {
-  if (ctx.state.phase === 'shootout' || ctx.state.shootoutRound <= 0) return null;
-  return ctx.state.skaters[ctx.state.shootoutRound - 1] ?? null;
+  return skaterById(ctx.state, ctx.state.assistCandidateId);
 }
 
 // ---------------------------------------------------------------------------
@@ -412,13 +426,18 @@ export function resolveSkaterActions(
   }
 }
 
-/** Keep the carried puck glued to the carrier's stick. */
+/**
+ * Keep the carried puck glued to the carrier's stick, and run the timers that
+ * only tick while somebody has it.
+ */
 export function attachPuckToCarrier(ctx: SimContext): void {
+  const puck = ctx.state.puck;
   const carrier = puckCarrier(ctx.state);
   if (carrier === null) return;
-  ctx.state.puck.x = stickPointX(carrier);
-  ctx.state.puck.y = stickPointY(carrier);
-  ctx.state.puck.vx = carrier.vx;
-  ctx.state.puck.vy = carrier.vy;
-  if (ctx.state.puck.pickupCooldown > 0) ctx.state.puck.pickupCooldown--;
+  puck.vx = carrier.vx;
+  puck.vy = carrier.vy;
+  seatPuckOnStick(puck, carrier);
+
+  if (puck.oneTimerTicks > 0) puck.oneTimerTicks--;
+  if (puck.pickupCooldown > 0) puck.pickupCooldown--;
 }

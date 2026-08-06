@@ -11,34 +11,6 @@
  *   - no I/O, no logging, no reads of anything outside its arguments
  *
  * Violating this causes desyncs that are extremely painful to debug.
- *
- * ---------------------------------------------------------------------------
- * STATE FIELD OVERLOADS
- *
- * types.ts is a frozen contract shared with the server, the client and the
- * roster pipeline, so the sim cannot add fields to GameSimState. Three counters
- * the gameplay needs therefore live in fields that are provably dead in the
- * regime where they are reused. Each is discriminated by a value already in the
- * state, so there is never a moment when both meanings are live at once:
- *
- *   puck.pickupCooldown   while puck.carrierId !== null
- *                         -> ticks left in the one-timer window.
- *                            Nothing can pick up a carried puck, so the cooldown
- *                            has no other meaning while somebody has it.
- *
- *   skater.streakGoals    while skater.onFire === true
- *                         -> ticks of heat remaining.
- *                            The goal count only matters up to the moment it
- *                            crosses ON_FIRE.goalsRequired and lights the skater.
- *
- *   state.shootoutRound   while state.phase !== 'shootout'
- *                         -> index+1 of the skater who fed the current carrier,
- *                            so a goal can be credited back to the passer.
- *                            types.ts documents this field as unused outside the
- *                            shootout, and entering the shootout zeroes it.
- *
- * If types.ts is ever unfrozen, promote these to real fields (`oneTimerTicks`,
- * `onFireTicks`, `assistCandidate`) and delete this note.
  */
 
 import { MATCH, SKATER, TICK_RATE } from '../tuning.js';
@@ -66,10 +38,13 @@ import { applyFriction, confineSkater, separateCircles } from './physics.js';
 import { checkCarriedGoal, stepLoosePuck } from './puck.js';
 import {
   advancePhase,
+  checkStrandedPuck,
   endShootoutAttempt,
   puckDead,
   scoreGoal,
+  shootoutSide,
   stopPlay,
+  trackFaceoffPresses,
 } from './rules.js';
 import { driveSkater, moveSkater, tickSkaterTimers } from './skater.js';
 
@@ -105,6 +80,7 @@ function buildSkaters(team: ResolvedTeam, side: TeamSide): SkaterSimState[] {
       controlledBy: null,
       onFire: false,
       streakGoals: 0,
+      onFireTicks: 0,
     };
   });
 }
@@ -166,10 +142,13 @@ export function createMatch(config: MatchConfig): GameSimState {
       lastTouchedBy: null,
       lastTouchSide: null,
       pickupCooldown: 0,
+      oneTimerTicks: 0,
+      strandedTicks: 0,
     },
     seats: [],
     rng: config.seed >>> 0,
     stats,
+    assistCandidateId: null,
     shootoutRound: 0,
     shootoutScore: { home: 0, away: 0 },
   };
@@ -233,6 +212,9 @@ function stepHold(ctx: SimContext): void {
     if (skater.actionCooldown > 0) skater.actionCooldown--;
     if (skater.stun > 0) skater.stun--;
   }
+  // The only thing a button does while the puck is being held for the drop is
+  // decide whether the press that follows was on the cue or early.
+  if (ctx.state.phase === 'faceoff') trackFaceoffPresses(ctx);
 }
 
 /** Turn a puck outcome into the matching rule. Returns true if play stopped. */
@@ -240,7 +222,11 @@ function applyPuckOutcome(ctx: SimContext, conceding: TeamSide | null, froze: bo
   const { state } = ctx;
   if (conceding !== null) {
     if (state.phase === 'shootout') {
-      endShootoutAttempt(ctx, true);
+      // Which net it went into decides the attempt. Anything in the shooter's own
+      // end is a miss, not a conversion — crediting it would hand a league match
+      // to whoever put the puck through their own goalie, which is the worst
+      // possible place for a sign error.
+      endShootoutAttempt(ctx, conceding !== shootoutSide(state.shootoutRound));
     } else {
       scoreGoal(ctx, conceding);
     }
@@ -304,9 +290,12 @@ function stepLive(ctx: SimContext): void {
     }
     resolvePickups(ctx, previousX, previousY, state.puck.x, state.puck.y);
 
-    // A shootout attempt is over the moment the chance is gone.
-    if (state.phase === 'shootout' && shootoutAttemptDead(ctx, outcome.kind === 'save')) {
-      endShootoutAttempt(ctx, false);
+    // A shootout attempt is over the moment the chance is gone; outside it, a
+    // puck nobody can reach eventually gets waved dead.
+    if (state.phase === 'shootout') {
+      if (shootoutAttemptDead(ctx, outcome.kind === 'save')) endShootoutAttempt(ctx, false);
+    } else {
+      checkStrandedPuck(ctx, previousX, previousY);
     }
   }
 }
@@ -382,6 +371,7 @@ export function cloneState(state: GameSimState): GameSimState {
     seats: state.seats.map((s) => ({ ...s })),
     rng: state.rng,
     stats: Object.fromEntries(Object.entries(state.stats).map(([k, v]) => [k, { ...v }])),
+    assistCandidateId: state.assistCandidateId,
     shootoutRound: state.shootoutRound,
     shootoutScore: { home: state.shootoutScore.home, away: state.shootoutScore.away },
   };

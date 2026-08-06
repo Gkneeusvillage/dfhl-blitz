@@ -296,6 +296,8 @@ export interface SkaterSimState {
   onFire: boolean;
   /** Consecutive goals by this skater, drives the on-fire threshold. */
   streakGoals: number;
+  /** Ticks of heat remaining while `onFire`; 0 otherwise. */
+  onFireTicks: number;
 }
 
 export interface GoalieSimState {
@@ -325,6 +327,14 @@ export interface PuckSimState {
   lastTouchSide: TeamSide | null;
   /** Ticks before the puck may be picked up again (prevents instant re-grab after a shot). */
   pickupCooldown: number;
+  /** Ticks left in which the carrier's shot still counts as a one-timer; 0 otherwise. */
+  oneTimerTicks: number;
+  /**
+   * Consecutive ticks this loose puck has sat in exactly the same spot with
+   * nobody able to reach it. Drives the dead-puck whistle in `sim/rules.ts`; zero
+   * whenever the puck is carried, has moved, or is inside somebody's reach.
+   */
+  strandedTicks: number;
 }
 
 export interface Score {
@@ -368,6 +378,8 @@ export interface GameSimState {
   /** Deterministic RNG state. Never read Math.random() in the sim. */
   rng: number;
   stats: Record<string, PlayerMatchStats>;
+  /** Skater id who fed the current carrier, so a goal can be credited back to the passer. */
+  assistCandidateId: string | null;
   /** Shootout bookkeeping; unused until phase === 'shootout'. */
   shootoutRound: number;
   shootoutScore: Score;

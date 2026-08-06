@@ -28,12 +28,28 @@ const NO_OUTCOME: PuckOutcome = { kind: 'none' };
  *
  * Small enough to be invisible, large enough to survive the rounding in the next
  * tick's sweep so the puck can never re-enter the contact circle it just left.
+ *
+ * This and the carry-through below are two independent guards on the same
+ * failure, and that is deliberate rather than accidental: measured, removing
+ * either one alone still leaves the puck moving, because a sweep that reports
+ * t = 0 leaves a full tick of travel to spend and the carry-through spends it.
+ * Removing BOTH is the pre-42c0967 behaviour, and that pins the puck on the post
+ * forever — `net.test.ts` fails on it. Do not delete one on the grounds that the
+ * tests still pass without it; that only means the other one is holding.
  */
 const POST_SEPARATION = 1e-3;
 
 /**
  * Does the segment cross a goal line between the posts, travelling in the
  * direction an attacker would be shooting? Returns the crossing parameter, or -1.
+ *
+ * This tests the puck's CENTRE against the full `goalHalfWidth`, which is wider
+ * than the band a loose puck can actually reach: `firstPostHit` sweeps a circle
+ * of `postRadius + PUCK.radius` and wins every tie, so any crossing outside
+ * `goalHalfWidth - PUCK.radius` = 2.5 ft is a post rather than a goal. Measured:
+ * 2.50 goal, 2.51 post. Widening the test here would not open the net up; it
+ * would only decide what `checkCarriedGoal` — which has no post sweep, because a
+ * carried puck is on a stick and not in flight — counts as walked over the line.
  */
 function goalCrossing(
   x0: number,

@@ -138,12 +138,28 @@ function toUnit(skaters: readonly RosterPlayer[]): LineUnit {
  * Arrange four forwards and two defensemen into the two most evenly matched
  * lines.
  *
- * Balance is an *arrangement* problem, never a selection one — deliberately
- * dressing a weaker player would even the lines out at the cost of the team.
  * With the personnel fixed there are only 12 legal arrangements (6 ways to pick
  * line one's forwards x 2 ways to assign the defensemen), so this enumerates
  * them rather than reaching for a heuristic. Ties break toward the stronger
  * unit being line one, then on ids so every machine picks the same lineup.
+ *
+ * Two decisions here were reviewed and deliberately kept:
+ *
+ * 1. The personnel are settled before this function runs — the top four
+ *    forwards and top two defensemen, full stop. Selecting from the wider
+ *    top-6-F / top-4-D pool would reach a flatter split more often, but only by
+ *    dressing a weaker player to even out a number, which makes the team worse
+ *    on the ice. Balance is an *arrangement* problem, never a selection one.
+ *
+ * 2. Balance is measured on `overall`, not on Fantrax `Score`. Score is a
+ *    season's fantasy production and is the right axis for deciding *who*
+ *    dresses (see `compareStrength`), but it is not an input to the match:
+ *    `overall` is the 0-99 rating the derived attributes are built from, and
+ *    attributes are all `stepMatch` ever reads. Score also runs on a different
+ *    scale at the top — the curve in tools/build-rosters.ts compresses elite
+ *    Scores — so two lines level on Score can be plainly unequal once they hit
+ *    the ice. Balancing on the number the sim consumes is what makes the two
+ *    lines feel matched to the player holding the controller.
  */
 function balanceLines(
   forwards: readonly RosterPlayer[],

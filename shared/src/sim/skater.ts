@@ -75,12 +75,13 @@ export function tickSkaterTimers(ctx: SimContext, skater: SkaterSimState): void 
   if (skater.stun > 0) skater.stun--;
   if (skater.actionCooldown > 0) skater.actionCooldown--;
 
-  // See the STATE FIELD OVERLOADS note in sim/index.ts: while onFire, streakGoals
-  // counts down the remaining ticks of heat instead of counting goals.
   if (skater.onFire) {
-    skater.streakGoals--;
-    if (skater.streakGoals <= 0) {
+    skater.onFireTicks--;
+    if (skater.onFireTicks <= 0) {
       skater.onFire = false;
+      skater.onFireTicks = 0;
+      // Heat that burns out has to be earned again from scratch, otherwise one
+      // stale goal leaves the skater a single tally short of relighting forever.
       skater.streakGoals = 0;
     }
   }

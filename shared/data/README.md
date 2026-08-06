@@ -13,6 +13,14 @@ The build is deterministic: the same CSV always produces byte-identical player
 records, so a rebuild that changes more than the `generatedAt` timestamp means
 the source data actually changed.
 
+**After a refresh, one block of test code needs the new numbers.**
+`tools/build-rosters.test.ts` opens with a single constant named
+`CURRENT_EXPORT` holding the facts of the export committed today: total rows,
+player count, free-agent count, and the per-team `G / D / F` table. Copy the
+figures `npm run build:rosters` prints into that block and the suite is current
+again — every other assertion in the file is derived from the CSV while the
+tests run, so nothing else needs touching.
+
 ## `teams.config.json` — HAND-EDITABLE, owned by the league
 
 **This file is yours.** The pipeline never writes to it and never reads it, so
