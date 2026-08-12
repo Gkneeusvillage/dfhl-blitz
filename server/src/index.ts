@@ -15,7 +15,9 @@ import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import express from 'express';
 
-import { HelloRoom } from './rooms/HelloRoom.js';
+import { MATCH_ROOM } from '@dfhl/shared';
+
+import { MatchRoom } from './rooms/MatchRoom.js';
 
 /**
  * Port resolution, most explicit first:
@@ -70,7 +72,16 @@ const gameServer = new Server({
   transport: new WebSocketTransport({ server: httpServer }),
 });
 
-gameServer.define('hello', HelloRoom);
+/**
+ * One room type, covering both the lobby and the match.
+ *
+ * `filterBy(['code'])` is what makes room codes work without a hand-rolled
+ * registry: the code a room mints in `onCreate` is written onto its matchmaking
+ * listing, and `joinOrCreate(MATCH_ROOM, { code })` matches against that field.
+ * A code nobody is using falls through to room creation, where `MatchRoom`
+ * refuses it — an unknown code is an error, never a silently created room.
+ */
+gameServer.define(MATCH_ROOM, MatchRoom).filterBy(['code']);
 
 gameServer
   .listen(PORT)

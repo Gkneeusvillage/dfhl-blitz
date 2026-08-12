@@ -6,7 +6,7 @@
   "main": "./src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts --port 2567",
-    "build": "tsup src/index.ts --format esm --out-dir dist --clean --target node20 --sourcemap"
+    "build": "tsup"
   },
   "dependencies": {
     "@colyseus/core": "0.16.x",

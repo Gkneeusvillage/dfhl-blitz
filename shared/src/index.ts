@@ -11,4 +11,5 @@ export * from './tuning.js';
 export * from './rink.js';
 export * from './rng.js';
 export * from './lineup.js';
+export * from './net/protocol.js';
 export * from './sim/index.js';
