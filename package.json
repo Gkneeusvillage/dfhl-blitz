@@ -19,7 +19,8 @@
     "typecheck": "tsc -p shared/tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit && tsc -p tools/tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "botmatch": "tsx tools/botmatch.ts"
+    "botmatch": "tsx tools/botmatch.ts",
+    "latency": "tsx tools/latency.ts"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

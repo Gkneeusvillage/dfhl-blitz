@@ -138,6 +138,12 @@ export class MatchRoom extends Room {
   private runner: MatchRunner | null = null;
   private readonly step = createFixedStep();
 
+  /**
+   * The last finished match's result, kept after the runner is discarded.
+   * See `endMatch` for why the live state cannot answer this question.
+   */
+  private lastResult: MatchEndMessage | null = null;
+
   /** Single source of truth: a match is running exactly when a runner exists. */
   private get inProgress(): boolean {
     return this.runner !== null;
@@ -572,11 +578,28 @@ export class MatchRoom extends Room {
     // tick, sending again would put two snapshots for the same tick into every
     // interpolation buffer.
     if (runner.ticksSinceSnapshot > 0) this.sendSnapshots();
-    this.broadcast(ServerMessage.MatchEnd, {
+
+    const result: MatchEndMessage = {
       score: { home: state.score.home, away: state.score.away },
       stats: state.stats,
       seats: state.seats.map((seat) => ({ ...seat })),
-    } satisfies MatchEndMessage);
+    };
+
+    /*
+     * Kept after the runner is gone, so the room can still say what happened.
+     *
+     * A sudden-death winner is scored and ends the match inside ONE synchronous
+     * tick: the score increments, the last snapshot goes out, and `returnToLobby`
+     * nulls the runner before control returns to the event loop. Nothing outside
+     * this call can ever observe the winning score in `runner.state`, which left
+     * the bot harness unable to get an independent server-side opinion on exactly
+     * the goal that decided the game — it read 0-0 against two clients correctly
+     * reporting 1-0 and called it a desync.
+     *
+     * The post-game screen in Phase 4 wants this for the same reason.
+     */
+    this.lastResult = result;
+    this.broadcast(ServerMessage.MatchEnd, result satisfies MatchEndMessage);
 
     this.returnToLobby();
   }

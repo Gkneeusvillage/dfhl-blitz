@@ -25,7 +25,7 @@ import { Server, matchMaker } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 
 import { MATCH_ROOM } from '@dfhl/shared';
-import type { GameSimState } from '@dfhl/shared';
+import type { GameSimState, Score } from '@dfhl/shared';
 
 import { MatchRoom } from '../server/src/rooms/MatchRoom.js';
 
@@ -43,6 +43,7 @@ interface RoomInternals {
     state: GameSimState;
     buffers: Map<string, { accepted: number; refused: number; overrun: number; ackTick: number; pending: unknown[] }>;
   } | null;
+  lastResult: { score: Score } | null;
 }
 
 export interface SeatInputStats {
@@ -59,6 +60,14 @@ export interface HarnessServer {
   readonly endpoint: string;
   /** The authoritative match state, or null when no match is running in that room. */
   peekState(roomId: string): GameSimState | null;
+  /**
+   * The server's OWN record of how the last match finished.
+   *
+   * This is the only way to get a server-side opinion on a sudden-death winner:
+   * that goal is scored and the match ended inside one synchronous tick, so
+   * `peekState` can never catch the winning score.
+   */
+  peekLastResult(roomId: string): Score | null;
   /** Per-seat input buffer counters, which is where a refused input shows up. */
   peekInputStats(roomId: string): SeatInputStats[];
   /** Whether the matchmaker still lists the room. */
@@ -93,6 +102,11 @@ export async function startMatchServer(port = 0): Promise<HarnessServer> {
 
     peekState(roomId: string): GameSimState | null {
       return internals(roomId)?.runner?.state ?? null;
+    },
+
+    peekLastResult(roomId: string): Score | null {
+      const score = internals(roomId)?.lastResult?.score;
+      return score === undefined ? null : { home: score.home, away: score.away };
     },
 
     peekInputStats(roomId: string): SeatInputStats[] {
