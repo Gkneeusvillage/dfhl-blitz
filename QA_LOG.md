@@ -144,3 +144,66 @@ from, and **1,500 point-blank wrist shots produced zero goals**.
 - **Point-blank shots remain hard when the goalie is square** (20.7% at 10 ft). This is defensible —
   a goalie challenging at 3 ft genuinely does cover the angle, and the counterplay is to move it
   first — but it is worth a look once there are humans playing rather than AI.
+
+---
+
+## Aspect C — Netcode & Server
+
+### Status: built and measured, NOT yet adversarially inspected
+
+Three separate interruptions (a network failure, a session limit, and an app update) killed the
+inspector agent before it ran. Everything below was measured by the orchestrator, which means it is
+**self-reported**: no independent party has tried to break it. The inspection rubric in
+OPUS5_GAME_PLAN.md section 4 is still owed, and criteria 4 (server authority under real attack),
+5 (reconnect), 6 (room lifecycle leaks) and 9 (are the tests meaningful) have had only cursory
+checks. Treat this as "works" rather than "verified".
+
+### What was measured
+
+Two headless clients against the real server, full matches to a final:
+
+| link | mean err | p95 | max | snaps | snapshot Hz | verdict |
+|---|---|---|---|---|---|---|
+| clean | 0.017 ft | 0.08 ft | 2.4 ft | 0 | 20.0 | agreed |
+| 150 ms + 2% loss | 0.747 ft | 4.12 ft | 45.9 ft | 37 | 19.5 | agreed |
+
+The large `max` under impairment is **control handover, not desync** — 61 control mismatches against
+8 on a clean link. When the server hands a seat a different skater than the client predicted (the
+NHL'94 auto-switch keys off proximity to a puck remote players are moving), the error is measured
+between two players standing apart, so it reads as tens of feet while nothing has desynced. Snapping
+to the skater the server says you have is the correct response. p95 — the physics measure — stays
+under the 6 ft threshold.
+
+**Bandwidth, the price of whole-state snapshots:** 75 KB/s down per client after msgpack, against
+110 KB/s as raw JSON. Dropping `stats` and `seats` from every snapshot would save 24% and is
+recorded as a measured option rather than a guess.
+
+### Orchestrator finding: the harness was wrong, not the netcode
+
+The bot harness reported a desync — two clients saying 1-0 against a server saying 0-0. The netcode
+was correct. A sudden-death winner is scored, snapshotted and ends the match inside ONE synchronous
+tick: `endMatch` broadcasts and then nulls the runner before control returns to the event loop, so
+the winning score never exists in `runner.state` between two turns of the loop and no external
+poller can ever observe it. `MatchRoom` now keeps `lastResult`, written in the same breath as the
+MatchEnd broadcast. The harness also now fails loudly when it never observed the server at all,
+rather than silently comparing against a default 0-0 and calling that agreement.
+
+### Live browser verification — partially blocked
+
+Verified in two real browser tabs against the real server: create room; **join by code including the
+`BLITZ-` prefix a friend would paste**; automatic home/away assignment; team select across all 14
+franchises; ready flags; host-only settings; and a match starting on real league data (Detroit vs
+Quebec, John Gibson in net, McDavid and Tavares on the Nordiques line). Snapshots reached both
+clients and the interpolated view was correct — right tick, right phase, right seats, right
+controlled skaters. DOM hit-testing confirmed at 1280x860 that the Phaser canvas does not overlay
+the lobby controls.
+
+NOT verified: sustained gameplay, rendering and keyboard input. The Browser pane was not displayed,
+so `document.visibilityState` was `hidden` and **requestAnimationFrame did not fire at all** —
+measured: 0 frames and 0 scene updates in 2 seconds. Phaser's frame loop drives the input pump and
+the renderer, so with RAF suspended no input is produced and no scene transition completes. This is
+an environment limitation, not a defect; it needs a human with the pane open, or the deployed URL.
+
+**Genuine UI finding:** at a 375 px wide viewport the lobby overflows — the Ready and Leave buttons
+land below the fold at y=858. Fine for the PC target, but pair D should make the lobby fit a narrow
+window.
