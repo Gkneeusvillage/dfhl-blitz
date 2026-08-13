@@ -1,58 +1,97 @@
 /**
- * The lobby: nickname, create or join by code, pick a franchise, ready up, start.
+ * The room: get connected, get a franchise, get everyone ready.
  *
  * -----------------------------------------------------------------------------
- * SCOPE. Pair D owns the real menu flow in Phase 4 and pair F the art in Phase 5;
- * this exists so the netcode can be driven and inspected end to end, and it is
- * built to be correct and legible rather than to look like anything. Do not
- * spend effort here.
+ * WHY THE PRIMARY ACTIONS LIVE IN THE PINNED FOOTER
  *
- * WHY THE LOBBY IS DOM AND THE MATCH IS PHASER
+ * The recorded finding from Phase 3 was that at a 375 px viewport Ready and
+ * Leave landed at y=858 — below the fold on the screen whose entire purpose is
+ * those two buttons. Making the panel shorter would have fixed that width and
+ * not the next one. Ready, Start and Leave are now in `UiScreen`'s footer, which
+ * is `flex: 0 0 auto` above a body that scrolls, so they are on screen at every
+ * size by construction rather than by measurement.
  *
- * The lobby needs two text fields and a dozen buttons. Phaser has no text input,
- * so doing this on the canvas would mean hand-rolling a caret, a selection, and
- * clipboard handling — for a screen that is scheduled to be thrown away. An
- * overlay of real `<input>` elements is a tenth of the code, is accessible for
- * free, and lets a player paste a room code out of a group chat. The match
- * itself is Phaser, because that is a rink.
+ * WHY THE ROOM PANEL IS BUILT ONCE AND MUTATED
+ *
+ * Every ready toggle by anybody re-broadcasts the whole lobby, so this re-renders
+ * several times a second while four people fidget. Rebuilding the DOM each time
+ * would throw away the focus ring mid-press — the controller equivalent of the
+ * button moving out from under a cursor. So the controls are created once and
+ * only their text, state and the seat list (which holds nothing focusable)
+ * change.
+ *
+ * WHY TEAM SELECT AND THE LINE PICKER ARE SEPARATE SCENES
+ *
+ * A franchise's roster is 41-54 real players and the point of the screen is to
+ * read it. That does not fit beside a seat list, and squeezing it in would make
+ * the one emotional moment in the flow — finding McDavid on your first line —
+ * into a dropdown.
  */
 
 import Phaser from 'phaser';
 
-import { formatRoomCode } from '@dfhl/shared';
-import type { LobbyMessage, TeamCode } from '@dfhl/shared';
+import { ROOM_CODE_ALPHABET, formatRoomCode } from '@dfhl/shared';
+import type { LobbyMessage, LobbySeat } from '@dfhl/shared';
 
 import { ConnectionError } from '../net/connection.js';
 import type { MatchSession } from '../net/session.js';
-import { TEAM_LIST } from '../data/teams.js';
+import { teamConfig } from '../data/teams.js';
+import { summaryFor } from '../data/rosters.js';
+import {
+  NICKNAME_CHARS,
+  UiScreen,
+  button,
+  chip,
+  div,
+  field,
+  fill,
+  panel,
+  row,
+  stepper,
+  swatch,
+  textInput,
+  write,
+  type Stepper,
+} from '../ui/index.js';
 
 const NICKNAME_KEY = 'dfhl.nickname';
 
+/** Period lengths the stepper walks, in seconds. Arcade matches, not real ones. */
+const PERIOD_SECONDS = [45, 60, 90, 120, 180, 240, 300] as const;
+
 export class LobbyScene extends Phaser.Scene {
   private session!: MatchSession;
-  private root!: HTMLDivElement;
+  private screen!: UiScreen;
   private unsubscribes: Array<() => void> = [];
 
-  private statusLine!: HTMLDivElement;
+  // Connect state
   private connectPanel!: HTMLDivElement;
-  private roomPanel!: HTMLDivElement;
   private nicknameInput!: HTMLInputElement;
   private codeInput!: HTMLInputElement;
   private createButton!: HTMLButtonElement;
   private joinButton!: HTMLButtonElement;
 
-  private roomHeading!: HTMLDivElement;
+  // Room state
+  private roomPanel!: HTMLDivElement;
+  private roomCodeNode!: HTMLDivElement;
   private seatList!: HTMLDivElement;
-  private teamGrid!: HTMLDivElement;
-  private teamButtons = new Map<TeamCode, HTMLButtonElement>();
-  private settingsRow!: HTMLDivElement;
-  private periodsInput!: HTMLInputElement;
-  private periodSecondsInput!: HTMLInputElement;
-  private onFireInput!: HTMLInputElement;
+  private teamButton!: HTMLButtonElement;
+  private linesButton!: HTMLButtonElement;
+  private teamSummary!: HTMLDivElement;
+  private settingsPanel!: HTMLDivElement;
+  private periodsStepper!: Stepper;
+  private lengthStepper!: Stepper;
+  private onFireButton!: HTMLButtonElement;
+  private lastResultPanel!: HTMLDivElement;
+
+  // Footer
   private readyButton!: HTMLButtonElement;
   private startButton!: HTMLButtonElement;
   private leaveButton!: HTMLButtonElement;
-  private resultLine!: HTMLDivElement;
+  private statusNode!: HTMLDivElement;
+
+  /** Last connection failure put on screen, so the same one is not re-announced. */
+  private shownError: string | null = null;
 
   constructor() {
     super('Lobby');
@@ -61,122 +100,117 @@ export class LobbyScene extends Phaser.Scene {
   create(): void {
     this.session = this.registry.get('session') as MatchSession;
 
-    this.add
-      .text(this.scale.width / 2, 60, 'DFHL BLITZ', {
-        fontFamily: 'Impact, "Arial Black", sans-serif',
-        fontSize: '56px',
-        color: '#e8eef7',
-      })
-      .setOrigin(0.5);
+    this.screen = new UiScreen({
+      title: 'DFHL BLITZ',
+      subtitle: 'lobby',
+      onBack: () => this.back(),
+    });
 
-    this.buildOverlay();
+    this.statusNode = div('faint');
+    this.screen.headRight.append(this.statusNode);
+
+    this.buildConnectPanel();
+    this.buildRoomPanel();
+    this.buildFooter();
+
+    this.screen.body.append(this.connectPanel, this.roomPanel, this.lastResultPanel);
 
     this.unsubscribes.push(
       this.session.connection.on('lobby', (message) => this.renderRoom(message)),
       this.session.connection.on('status', () => this.renderStatus()),
-      // A match can start because the host pressed the button, or because this
-      // client joined a room that was already playing. Both arrive as matchStart.
-      this.session.connection.on('matchStart', () => this.scene.start('Match')),
+      this.session.connection.on('error', (message) => this.showMessage(message.message, true)),
+      // A match starts either because the host pressed the button or because we
+      // joined a room that was already playing. Both arrive as matchStart.
+      this.session.connection.on('matchStart', () => this.go('Match')),
     );
 
     this.renderStatus();
     const lobby = this.session.lobby;
-    if (lobby !== null) this.renderRoom(lobby);
-    this.renderResult();
+    if (lobby !== null && this.inRoom()) this.renderRoom(lobby);
+    this.renderLastResult();
 
-    this.events.once('shutdown', () => this.teardown());
-    this.events.once('destroy', () => this.teardown());
+    this.screen.focusFirst();
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.teardown());
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => this.teardown());
+  }
+
+  override update(_time: number, delta: number): void {
+    this.screen.update(delta);
   }
 
   private teardown(): void {
     for (const off of this.unsubscribes) off();
     this.unsubscribes = [];
-    this.root.remove();
+    this.screen.destroy();
   }
 
-  // -------------------------------------------------------------------------
-  // DOM
-  // -------------------------------------------------------------------------
+  private go(key: string, data?: object): void {
+    this.screen.suspend();
+    this.scene.start(key, data);
+  }
 
-  private buildOverlay(): void {
-    this.root = document.createElement('div');
-    this.root.className = 'dfhl-lobby';
-    this.root.innerHTML = `<style>${OVERLAY_CSS}</style>`;
-
-    this.resultLine = el('div', 'result');
-    this.statusLine = el('div', 'status');
-
-    // --- connect ---------------------------------------------------------
-    this.connectPanel = el('div', 'panel');
-    this.nicknameInput = input('text', 'Nickname', 16);
-    this.nicknameInput.value = localStorage.getItem(NICKNAME_KEY) ?? '';
-    this.codeInput = input('text', 'Room code, e.g. BLITZ-7GK2', 12);
-    this.createButton = button('Create room', () => void this.doCreate());
-    this.joinButton = button('Join room', () => void this.doJoin());
-
-    this.connectPanel.append(
-      row(label('Nickname', this.nicknameInput)),
-      row(this.createButton),
-      row(label('Room code', this.codeInput), this.joinButton),
-    );
-
-    // --- room ------------------------------------------------------------
-    this.roomPanel = el('div', 'panel');
-    this.roomPanel.hidden = true;
-    this.roomHeading = el('div', 'code');
-    this.seatList = el('div', 'seats');
-    this.teamGrid = el('div', 'teams');
-
-    for (const team of TEAM_LIST) {
-      const btn = button(`${team.abbreviation} — ${team.displayName}`, () =>
-        this.session.connection.selectTeam(team.code),
-      );
-      btn.classList.add('team');
-      btn.style.borderLeft = `6px solid ${team.primaryColor}`;
-      this.teamButtons.set(team.code, btn);
-      this.teamGrid.append(btn);
+  private back(): void {
+    if (this.inRoom()) {
+      void this.doLeave();
+      return;
     }
+    this.go('Title');
+  }
 
-    this.periodsInput = numberInput(1, 7, () => this.pushSettings());
-    this.periodSecondsInput = numberInput(10, 900, () => this.pushSettings());
-    this.onFireInput = document.createElement('input');
-    this.onFireInput.type = 'checkbox';
-    this.onFireInput.addEventListener('change', () => this.pushSettings());
-
-    this.settingsRow = row(
-      label('Periods', this.periodsInput),
-      label('Seconds/period', this.periodSecondsInput),
-      label('On fire', this.onFireInput),
-    );
-
-    this.readyButton = button('Ready', () => this.toggleReady());
-    this.startButton = button('Start match', () => this.session.connection.startMatch());
-    this.leaveButton = button('Leave room', () => void this.doLeave());
-
-    this.roomPanel.append(
-      this.roomHeading,
-      this.seatList,
-      el('div', 'heading', 'Pick your franchise'),
-      this.teamGrid,
-      this.settingsRow,
-      row(this.readyButton, this.startButton, this.leaveButton),
-    );
-
-    this.root.append(this.resultLine, this.connectPanel, this.roomPanel, this.statusLine);
-    document.body.append(this.root);
+  private inRoom(): boolean {
+    const state = this.session.status.state;
+    return state === 'lobby' || state === 'playing' || state === 'reconnecting';
   }
 
   // -------------------------------------------------------------------------
-  // Actions
+  // Connect
   // -------------------------------------------------------------------------
+
+  private buildConnectPanel(): void {
+    this.nicknameInput = textInput('Nickname', 16);
+    this.nicknameInput.value = localStorage.getItem(NICKNAME_KEY) ?? defaultNickname();
+    this.screen.useKeypad(this.nicknameInput, {
+      title: 'Nickname',
+      charset: NICKNAME_CHARS,
+      maxLength: 16,
+      allowSpace: true,
+    });
+
+    this.codeInput = textInput('BLITZ-7GK2', 12);
+    // The code alphabet excludes O/0, I/1 and S/5 so a code read aloud survives
+    // the trip (see `protocol.ts`); the grid offers exactly those characters, so
+    // a controller cannot enter a code that could never exist.
+    this.screen.useKeypad(this.codeInput, {
+      title: 'Room code',
+      charset: ROOM_CODE_ALPHABET,
+      maxLength: 4,
+    });
+
+    this.createButton = button('Create a room', {
+      className: 'btn--primary',
+      onClick: () => void this.doCreate(),
+      attrs: { 'data-autofocus': 'true' },
+    });
+    this.joinButton = button('Join room', { onClick: () => void this.doJoin() });
+
+    this.connectPanel = panel(
+      div('heading', 'Play a league-mate'),
+      row(field('Your name', this.nicknameInput)),
+      row(this.createButton, div('faint', 'you get a code to share')),
+      row(field('Room code', this.codeInput), this.joinButton),
+      div('faint', 'One of you creates a room and sends the code; the other joins with it.'),
+    );
+  }
 
   private async doCreate(): Promise<void> {
     this.setBusy(true);
     try {
       this.rememberNickname();
       await this.session.connection.createRoom(this.nicknameInput.value);
+      this.showMessage('Room created — send the code to your opponent.', false);
     } catch (error) {
-      this.showFailure(error);
+      this.showMessage(describe(error), true);
     } finally {
       this.setBusy(false);
     }
@@ -188,7 +222,7 @@ export class LobbyScene extends Phaser.Scene {
       this.rememberNickname();
       await this.session.connection.joinRoom(this.nicknameInput.value, this.codeInput.value);
     } catch (error) {
-      this.showFailure(error);
+      this.showMessage(describe(error), true);
     } finally {
       this.setBusy(false);
     }
@@ -196,26 +230,8 @@ export class LobbyScene extends Phaser.Scene {
 
   private async doLeave(): Promise<void> {
     await this.session.connection.leave();
-    this.roomPanel.hidden = true;
-    this.connectPanel.hidden = false;
     this.renderStatus();
-  }
-
-  private toggleReady(): void {
-    const me = this.mySeat();
-    this.session.connection.setReady(me === null ? true : !me.ready);
-  }
-
-  private pushSettings(): void {
-    this.session.connection.sendSettings({
-      periods: Number(this.periodsInput.value),
-      periodSeconds: Number(this.periodSecondsInput.value),
-      onFireEnabled: this.onFireInput.checked,
-    });
-  }
-
-  private rememberNickname(): void {
-    localStorage.setItem(NICKNAME_KEY, this.nicknameInput.value);
+    this.screen.nav.focus(this.createButton);
   }
 
   private setBusy(busy: boolean): void {
@@ -223,179 +239,288 @@ export class LobbyScene extends Phaser.Scene {
     this.joinButton.disabled = busy;
   }
 
-  private showFailure(error: unknown): void {
-    const text =
-      error instanceof ConnectionError
-        ? `${error.code}: ${error.message}`
-        : error instanceof Error
-          ? error.message
-          : String(error);
-    this.statusLine.textContent = text;
-    this.statusLine.classList.add('bad');
+  private rememberNickname(): void {
+    const name = this.nicknameInput.value.trim();
+    if (name.length > 0) localStorage.setItem(NICKNAME_KEY, name);
+  }
+
+  // -------------------------------------------------------------------------
+  // Room
+  // -------------------------------------------------------------------------
+
+  private buildRoomPanel(): void {
+    this.roomCodeNode = div('roomcode');
+    this.seatList = div('col');
+
+    this.teamButton = button('Choose your franchise', {
+      className: 'btn--primary',
+      onClick: () => this.go('TeamSelect'),
+    });
+    this.linesButton = button('Edit lines', {
+      onClick: () => this.go('LinePicker'),
+      disabled: true,
+    });
+    this.teamSummary = div('faint');
+
+    this.periodsStepper = stepper(3, {
+      min: 1,
+      max: 7,
+      step: 1,
+      onChange: (value) => this.session.connection.sendSettings({ periods: value }),
+    });
+    this.lengthStepper = stepper(nearestLengthIndex(180), {
+      min: 0,
+      max: PERIOD_SECONDS.length - 1,
+      step: 1,
+      format: (index) => `${PERIOD_SECONDS[index]}s`,
+      onChange: (index) =>
+        this.session.connection.sendSettings({ periodSeconds: PERIOD_SECONDS[index] }),
+    });
+    this.onFireButton = button('On fire: ON', {
+      onClick: () => this.toggleOnFire(),
+    });
+
+    this.settingsPanel = panel(
+      div('heading', 'Match settings — host only'),
+      row(
+        labelled('Periods', this.periodsStepper.root),
+        labelled('Length', this.lengthStepper.root),
+        this.onFireButton,
+      ),
+      div('faint', 'Changing a setting un-readies everyone, so nobody agrees to a game they did not see.'),
+    );
+
+    this.lastResultPanel = panel();
+    this.lastResultPanel.hidden = true;
+
+    this.roomPanel = panel(
+      row(div('heading', 'Room code'), this.roomCodeNode),
+      div('faint', 'Send this to your opponent — he types it into Join room.'),
+      div('heading', 'Players'),
+      this.seatList,
+      div('heading', 'Your team'),
+      row(this.teamButton, this.linesButton),
+      this.teamSummary,
+      this.settingsPanel,
+    );
+    this.roomPanel.hidden = true;
+  }
+
+  private buildFooter(): void {
+    this.readyButton = button('Ready', {
+      className: 'btn--primary',
+      onClick: () => this.toggleReady(),
+    });
+    this.startButton = button('Start match', {
+      className: 'btn--primary',
+      onClick: () => this.session.connection.startMatch(),
+    });
+    this.leaveButton = button('Leave room', {
+      className: 'btn--danger',
+      onClick: () => void this.doLeave(),
+    });
+    const controls = button('Controls', {
+      className: 'btn--ghost',
+      onClick: () => this.go('Controls', { returnTo: 'Lobby' }),
+    });
+    const title = button('Title', {
+      className: 'btn--ghost',
+      onClick: () => this.go('Title'),
+    });
+
+    this.screen.addFooter(this.readyButton, this.startButton, this.leaveButton, controls, title);
+    this.readyButton.hidden = true;
+    this.startButton.hidden = true;
+    this.leaveButton.hidden = true;
+  }
+
+  private toggleReady(): void {
+    const me = this.mySeat();
+    this.session.connection.setReady(me === null ? true : !me.ready);
+  }
+
+  private toggleOnFire(): void {
+    const enabled = this.session.lobby?.onFireEnabled ?? true;
+    this.session.connection.sendSettings({ onFireEnabled: !enabled });
+  }
+
+  private mySeat(): LobbySeat | null {
+    const seatId = this.session.seatId;
+    if (seatId === null) return null;
+    return this.session.lobby?.seats.find((seat) => seat.seatId === seatId) ?? null;
   }
 
   // -------------------------------------------------------------------------
   // Rendering
   // -------------------------------------------------------------------------
 
-  private mySeat(): LobbyMessage['seats'][number] | null {
-    const seatId = this.session.seatId;
-    if (seatId === null) return null;
-    return this.session.lobby?.seats.find((seat) => seat.seatId === seatId) ?? null;
-  }
-
   private renderStatus(): void {
     const status = this.session.status;
-    const rtt = status.rttMs === null ? '—' : `${Math.round(status.rttMs)} ms`;
-    this.statusLine.classList.toggle('bad', status.lastError !== null);
-    this.statusLine.textContent =
-      `${status.state} · rtt ${rtt} · ${this.session.connection.serverEndpoint}` +
-      (status.lastError === null ? '' : ` · ${status.lastError}`);
+    const inRoom = this.inRoom();
+
+    this.connectPanel.hidden = inRoom;
+    this.roomPanel.hidden = !inRoom;
+    this.readyButton.hidden = !inRoom;
+    this.leaveButton.hidden = !inRoom;
+    if (!inRoom) this.startButton.hidden = true;
+
+    const rtt = status.rttMs === null ? '' : `  ·  ${Math.round(status.rttMs)} ms`;
+    write(this.statusNode, `${status.state}${rtt}`);
+    this.statusNode.classList.toggle('bad', status.state === 'dropped');
+
+    // Only when it changes: `status` also fires on every pong, and re-showing
+    // the same failure once a second would bury anything else with something to
+    // say — including the message that the reconnect succeeded.
+    if (status.lastError !== null && status.lastError !== this.shownError) {
+      this.showMessage(status.lastError, true);
+    }
+    this.shownError = status.lastError;
   }
 
-  private renderResult(): void {
-    const result = this.session.finalResult;
-    if (result === null) {
-      this.resultLine.textContent = '';
-      return;
-    }
-    this.resultLine.textContent = `Final — home ${result.score.home}, away ${result.score.away}`;
+  private showMessage(text: string, bad: boolean): void {
+    this.screen.setHint(text, bad ? 'bad' : 'good');
   }
 
   private renderRoom(message: LobbyMessage): void {
-    this.connectPanel.hidden = true;
-    this.roomPanel.hidden = false;
-
-    this.roomHeading.textContent = `${formatRoomCode(message.roomCode)}${
-      message.inProgress ? '  ·  match in progress' : ''
-    }`;
+    this.renderStatus();
+    write(this.roomCodeNode, formatRoomCode(message.roomCode));
 
     const me = this.mySeat();
-
-    this.seatList.replaceChildren(
-      ...message.seats.map((seat) => {
-        const line = el('div', 'seat');
-        const marks = [
-          seat.isHost ? 'host' : null,
-          seat.ready ? 'ready' : null,
-          seat.connected ? null : 'disconnected',
-          seat.seatId === this.session.seatId ? 'you' : null,
-        ].filter((mark): mark is string => mark !== null);
-        line.textContent = `${seat.side.toUpperCase().padEnd(4)} ${seat.nickname} — ${
-          seat.teamCode ?? 'no team'
-        }${marks.length > 0 ? `  [${marks.join(', ')}]` : ''}`;
-        if (!seat.connected) line.classList.add('bad');
-        return line;
-      }),
-    );
-
-    for (const [code, btn] of this.teamButtons) {
-      btn.classList.toggle('selected', me?.teamCode === code);
-      btn.disabled = message.inProgress;
-    }
-
     const isHost = me?.isHost === true;
-    this.settingsRow.hidden = !isHost;
-    // Only written when the field is not focused, so a host typing "180" does
-    // not have the first digit stamped back over by the broadcast it triggers.
-    if (document.activeElement !== this.periodsInput) {
-      this.periodsInput.value = String(message.periods);
-    }
-    if (document.activeElement !== this.periodSecondsInput) {
-      this.periodSecondsInput.value = String(message.periodSeconds);
-    }
-    this.onFireInput.checked = message.onFireEnabled;
 
+    fill(this.seatList, ...message.seats.map((seat) => this.seatRow(seat, message)));
+
+    // Team choice
+    const teamCode = me?.teamCode ?? null;
+    if (teamCode === null) {
+      this.teamButton.textContent = 'Choose your franchise';
+      write(this.teamSummary, 'No franchise picked — you will be given one at the drop.');
+      this.linesButton.disabled = true;
+    } else {
+      const config = teamConfig(teamCode);
+      const summary = summaryFor(teamCode);
+      this.teamButton.textContent = `${config.displayName} — change`;
+      write(
+        this.teamSummary,
+        summary === null
+          ? config.displayName
+          : `${summary.star.name} leads a ${summary.starterRating} overall lineup  ·  ${summary.goalie.name} in net`,
+      );
+      this.linesButton.disabled = message.inProgress;
+    }
+    this.teamButton.disabled = message.inProgress;
+
+    // Host settings
+    this.settingsPanel.hidden = !isHost;
+    this.periodsStepper.set(message.periods);
+    this.lengthStepper.set(nearestLengthIndex(message.periodSeconds));
+    this.periodsStepper.setEnabled(!message.inProgress);
+    this.lengthStepper.setEnabled(!message.inProgress);
+    this.onFireButton.textContent = `On fire: ${message.onFireEnabled ? 'ON' : 'OFF'}`;
+    this.onFireButton.setAttribute('aria-pressed', String(message.onFireEnabled));
+    this.onFireButton.disabled = message.inProgress;
+
+    // Footer
     this.readyButton.textContent = me?.ready === true ? 'Not ready' : 'Ready';
     this.readyButton.disabled = message.inProgress;
+    this.readyButton.classList.toggle('btn--primary', me?.ready !== true);
 
     const everyoneReady = message.seats
       .filter((seat) => seat.connected)
       .every((seat) => seat.ready);
+    const enoughPlayers = message.seats.filter((seat) => seat.connected).length >= 1;
     this.startButton.hidden = !isHost;
-    this.startButton.disabled = message.inProgress || !everyoneReady;
+    this.startButton.disabled = message.inProgress || !everyoneReady || !enoughPlayers;
+
+    this.renderLastResult();
+  }
+
+  private seatRow(seat: LobbySeat, message: LobbyMessage): HTMLDivElement {
+    const node = div('seat');
+    const config = seat.teamCode === null ? null : teamConfig(seat.teamCode);
+    node.style.setProperty('--seat', config?.primaryColor ?? '#29354a');
+
+    const marks = div('row');
+    if (seat.isHost) marks.append(chip('host', 'chip--host'));
+    if (seat.seatId === this.session.seatId) marks.append(chip('you', 'chip--you'));
+    if (!seat.connected) marks.append(chip('disconnected', 'chip--bad'));
+    else if (seat.ready) marks.append(chip('ready', 'chip--good'));
+    else if (!message.inProgress) marks.append(chip('not ready'));
+
+    const identity = div('grow col');
+    identity.append(
+      div('seat__name ellipsis', seat.nickname),
+      div('faint ellipsis', config === null ? 'no franchise picked' : config.displayName),
+    );
+
+    node.append(
+      div('seat__side', seat.side.toUpperCase()),
+      config === null ? div() : swatch(config.primaryColor),
+      identity,
+      marks,
+    );
+    return node;
+  }
+
+  private renderLastResult(): void {
+    const result = this.session.finalResult;
+    const config = this.session.config;
+    if (result === null || config === null) {
+      this.lastResultPanel.hidden = true;
+      return;
+    }
+
+    this.lastResultPanel.hidden = false;
+    fill(
+      this.lastResultPanel,
+      div('heading', 'Last game'),
+      div(
+        'accent',
+        `${config.home.config.abbreviation} ${result.score.home}  —  ` +
+          `${result.score.away} ${config.away.config.abbreviation}`,
+      ),
+      row(
+        button('View the box score', {
+          className: 'btn--ghost',
+          onClick: () => this.go('PostGame'),
+        }),
+      ),
+    );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Small DOM helpers. Deliberately minimal — pair D replaces all of this.
-// ---------------------------------------------------------------------------
 
-function el<K extends 'div'>(tag: K, className: string, text?: string): HTMLDivElement {
-  const node = document.createElement(tag);
-  node.className = className;
-  if (text !== undefined) node.textContent = text;
+function labelled(text: string, control: HTMLElement): HTMLDivElement {
+  const node = div('row');
+  node.append(div('faint', text), control);
   return node;
 }
 
-function row(...children: HTMLElement[]): HTMLDivElement {
-  const node = document.createElement('div');
-  node.className = 'row';
-  node.append(...children);
-  return node;
+/**
+ * A stored setting need not be one of the presets — the previous build let a
+ * host type any number, and a room could still be carrying one.
+ */
+function nearestLengthIndex(seconds: number): number {
+  let best = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  PERIOD_SECONDS.forEach((value, index) => {
+    const distance = Math.abs(value - seconds);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = index;
+    }
+  });
+  return best;
 }
 
-function label(text: string, control: HTMLElement): HTMLLabelElement {
-  const node = document.createElement('label');
-  node.textContent = text;
-  node.append(control);
-  return node;
+/** Something to be called before anyone has typed, so a pad user never has to. */
+function defaultNickname(): string {
+  return `PLAYER ${Math.floor(Math.random() * 90 + 10)}`;
 }
 
-function input(type: string, placeholder: string, maxLength: number): HTMLInputElement {
-  const node = document.createElement('input');
-  node.type = type;
-  node.placeholder = placeholder;
-  node.maxLength = maxLength;
-  return node;
+function describe(error: unknown): string {
+  if (error instanceof ConnectionError) return error.message;
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
-
-function numberInput(min: number, max: number, onChange: () => void): HTMLInputElement {
-  const node = document.createElement('input');
-  node.type = 'number';
-  node.min = String(min);
-  node.max = String(max);
-  node.addEventListener('change', onChange);
-  return node;
-}
-
-function button(text: string, onClick: () => void): HTMLButtonElement {
-  const node = document.createElement('button');
-  node.textContent = text;
-  node.addEventListener('click', onClick);
-  return node;
-}
-
-const OVERLAY_CSS = `
-.dfhl-lobby {
-  position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px;
-  align-items: center; justify-content: center; padding: 120px 24px 24px;
-  font: 14px/1.5 Consolas, monospace; color: #cfdcef; pointer-events: none;
-}
-.dfhl-lobby > * { pointer-events: auto; }
-.dfhl-lobby .panel {
-  background: #131a26; border: 1px solid #29354a; border-radius: 8px;
-  padding: 16px; width: min(760px, 92vw); display: flex; flex-direction: column; gap: 10px;
-}
-.dfhl-lobby .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.dfhl-lobby label { display: flex; gap: 6px; align-items: center; color: #8fa3bf; }
-.dfhl-lobby input[type=text], .dfhl-lobby input[type=number] {
-  background: #0b0f17; border: 1px solid #33415a; color: #e8eef7;
-  padding: 6px 8px; border-radius: 4px; font: inherit;
-}
-.dfhl-lobby input[type=number] { width: 76px; }
-.dfhl-lobby button {
-  background: #1e2a3d; border: 1px solid #3a4c6b; color: #e8eef7;
-  padding: 7px 12px; border-radius: 4px; font: inherit; cursor: pointer; text-align: left;
-}
-.dfhl-lobby button:hover:not(:disabled) { background: #27374f; }
-.dfhl-lobby button:disabled { opacity: 0.45; cursor: default; }
-.dfhl-lobby button.selected { outline: 2px solid #f4c542; }
-.dfhl-lobby .teams { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-.dfhl-lobby .code { font-size: 22px; color: #f4c542; letter-spacing: 2px; }
-.dfhl-lobby .heading { color: #8fa3bf; text-transform: uppercase; letter-spacing: 1px; }
-.dfhl-lobby .seats { display: flex; flex-direction: column; gap: 2px; white-space: pre; }
-.dfhl-lobby .status { color: #7f93b0; }
-.dfhl-lobby .result { color: #f4c542; font-size: 18px; }
-.dfhl-lobby .bad { color: #ff8f8f; }
-`;

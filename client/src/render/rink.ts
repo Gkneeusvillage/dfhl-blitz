@@ -9,7 +9,7 @@
  */
 
 import Phaser from 'phaser';
-import { RENDER, RINK } from '@dfhl/shared';
+import { RENDER, RINK, defendingGoalX } from '@dfhl/shared';
 
 export interface RinkTransform {
   /** Screen x for a world x, in feet. */
@@ -37,7 +37,26 @@ const LINE_BLUE = 0x0b5fa5;
 const BOARDS = 0x2a3346;
 const CREASE = 0x9fd0f5;
 
-export function drawRink(graphics: Phaser.GameObjects.Graphics, t: RinkTransform): void {
+/**
+ * Whose end is whose.
+ *
+ * The crease and the goal frame are the two places a team colour belongs on the
+ * ice: they say which net you are shooting at without a caption, and they are
+ * the only marks a real rink paints differently at each end anyway. `home`
+ * defends the left end — `defendingGoalX` in shared is the authority, and it is
+ * read rather than assumed so a change there cannot leave the colours swapped.
+ */
+export interface RinkColors {
+  /** 0xRRGGBB for the side defending each net. */
+  home: number;
+  away: number;
+}
+
+export function drawRink(
+  graphics: Phaser.GameObjects.Graphics,
+  t: RinkTransform,
+  colors?: RinkColors,
+): void {
   const ppf = t.pixelsPerFoot;
   const left = t.toScreenX(-RINK.halfLength);
   const top = t.toScreenY(-RINK.halfWidth);
@@ -100,10 +119,19 @@ export function drawRink(graphics: Phaser.GameObjects.Graphics, t: RinkTransform
     }
   }
 
-  // Creases and nets.
+  // Creases and nets, tinted with the colours of the side defending each end.
+  const homeGoalX = defendingGoalX('home');
   for (const sign of [-1, 1]) {
-    const goalX = t.toScreenX(sign * RINK.goalLineX);
-    graphics.fillStyle(CREASE, 0.75);
+    const worldGoalX = sign * RINK.goalLineX;
+    const defender =
+      colors === undefined
+        ? null
+        : Math.sign(worldGoalX) === Math.sign(homeGoalX)
+          ? colors.home
+          : colors.away;
+
+    const goalX = t.toScreenX(worldGoalX);
+    graphics.fillStyle(defender ?? CREASE, defender === null ? 0.75 : 0.45);
     graphics.slice(
       goalX,
       t.toScreenY(0),
@@ -114,7 +142,7 @@ export function drawRink(graphics: Phaser.GameObjects.Graphics, t: RinkTransform
     );
     graphics.fillPath();
 
-    graphics.lineStyle(Math.max(2, ppf * 0.4), LINE_RED, 1);
+    graphics.lineStyle(Math.max(2, ppf * 0.4), defender ?? LINE_RED, 1);
     graphics.strokeRect(
       sign > 0 ? goalX : goalX - RINK.goalDepth * ppf,
       t.toScreenY(-RINK.goalHalfWidth),
