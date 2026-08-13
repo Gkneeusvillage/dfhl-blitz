@@ -78,6 +78,20 @@ export class FocusNav {
    */
   private scope: HTMLElement | null = null;
 
+  /**
+   * Notified whenever the ring moves, for screens that show something about
+   * whatever is highlighted.
+   *
+   * Deliberately not the DOM `focus` event, which a screen would otherwise be
+   * the obvious thing to listen to: focus events only fire while the document
+   * itself has system focus, so `element.focus()` in an unfocused window moves
+   * `document.activeElement` and tells nobody. That is not only an automation
+   * quirk — a player alt-tabbing back has the same window, and a preview panel
+   * that silently stops following the cursor is a hard bug to see coming. The
+   * navigator knows it moved the ring; it says so.
+   */
+  onFocusChange: ((node: HTMLElement) => void) | null = null;
+
   constructor(root: HTMLElement) {
     this.root = root;
   }
@@ -135,6 +149,7 @@ export class FocusNav {
     // `nearest` and not `center`: scrolling a long roster list by a whole
     // viewport for every step down the list is disorienting.
     node.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    this.onFocusChange?.(node);
     return node;
   }
 

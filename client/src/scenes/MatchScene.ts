@@ -161,9 +161,24 @@ export class MatchScene extends Phaser.Scene {
       }),
     );
 
+    window.addEventListener('keydown', this.onKeyDown);
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.teardown());
     this.events.once(Phaser.Scenes.Events.DESTROY, () => this.teardown());
   }
+
+  /**
+   * Escape opens the menu, and only ever opens it.
+   *
+   * Closing is left to the menu's own `onBack`, which is listening for the same
+   * key: if this handler toggled, one press would run both and the menu would
+   * shut the instant it appeared.
+   */
+  private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (event.code !== 'Escape' || this.menu !== null) return;
+    event.preventDefault();
+    this.toggleMenu();
+  };
 
   override update(_time: number, delta: number): void {
     const view = this.session.update(delta);
@@ -182,6 +197,7 @@ export class MatchScene extends Phaser.Scene {
   private teardown(): void {
     for (const off of this.unsubscribes) off();
     this.unsubscribes = [];
+    window.removeEventListener('keydown', this.onKeyDown);
     this.scale.off(Phaser.Scale.Events.RESIZE, this.layoutRink, this);
     this.menu?.destroy();
     this.menu = null;

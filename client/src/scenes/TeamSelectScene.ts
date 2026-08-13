@@ -26,7 +26,7 @@
 
 import Phaser from 'phaser';
 
-import { compareStrength } from '@dfhl/shared';
+import { compareStrength, isTeamCode } from '@dfhl/shared';
 import type { RosterPlayer, TeamCode, TeamConfig } from '@dfhl/shared';
 
 import { rosterFor, indexRoster, positionLabel, summaryFor } from '../data/rosters.js';
@@ -67,6 +67,11 @@ export class TeamSelectScene extends Phaser.Scene {
     }
 
     this.preview = div('col grow');
+
+    this.screen.nav.onFocusChange = (node) => {
+      const code = node.dataset.team;
+      if (isTeamCode(code ?? '')) this.renderPreview(code as TeamCode);
+    };
 
     const split = div('dfhl__split');
     split.append(list, this.preview);
@@ -121,6 +126,7 @@ export class TeamSelectScene extends Phaser.Scene {
       onClick: () => this.take(team.code),
     });
     node.style.setProperty('--team', team.primaryColor);
+    node.dataset.team = team.code;
     node.append(
       div('teambtn__name ellipsis', team.displayName),
       div(
@@ -131,8 +137,8 @@ export class TeamSelectScene extends Phaser.Scene {
       ),
     );
 
-    // Browsing is what the roster panel follows, and browsing on a pad is focus.
-    node.addEventListener('focus', () => this.renderPreview(team.code));
+    // Browsing on a pad is the ring moving, which `nav.onFocusChange` reports;
+    // browsing with a mouse is the pointer, which is this.
     node.addEventListener('mouseenter', () => this.renderPreview(team.code));
     return node;
   }

@@ -53,6 +53,9 @@ export class UiScreen {
   private readonly hintNode: HTMLDivElement;
   private keypad: Keypad | null = null;
 
+  /** The field the open keypad is writing into, and where the ring goes back to. */
+  private keypadTarget: HTMLElement | null = null;
+
   /** Text fields that offer the character grid, and what to fill it with. */
   private readonly keypads = new Map<HTMLInputElement, KeypadConfig>();
 
@@ -166,20 +169,30 @@ export class UiScreen {
         target.dispatchEvent(new Event('input', { bubbles: true }));
         target.dispatchEvent(new Event('change', { bubbles: true }));
       },
-      onClose: () => this.closeKeypad(target),
+      onClose: () => this.closeKeypad(),
     });
 
     this.keypad = keypad;
+    this.keypadTarget = target;
     this.root.append(keypad.root);
     keypad.claim(this.nav);
   }
 
-  private closeKeypad(target: HTMLElement | null): void {
+  /**
+   * Always returns the ring to the field that opened it.
+   *
+   * Closing removes the key the ring was sitting on, and a removed element takes
+   * the focus to `<body>` with it — so on a gamepad, cancelling would leave the
+   * screen with no cursor at all. Committing and cancelling both land back on
+   * the field, which is also where the player is looking.
+   */
+  private closeKeypad(): void {
     if (this.keypad === null) return;
     this.keypad.root.remove();
     this.keypad = null;
     this.nav.setScope(null);
-    this.nav.focus(target);
+    this.nav.ensureFocus(this.keypadTarget);
+    this.keypadTarget = null;
   }
 
   // -------------------------------------------------------------------------
@@ -197,7 +210,7 @@ export class UiScreen {
         return;
       case 'back':
         if (this.keypad !== null) {
-          this.closeKeypad(null);
+          this.closeKeypad();
           return;
         }
         this.options.onBack();

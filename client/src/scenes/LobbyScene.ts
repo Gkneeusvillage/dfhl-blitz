@@ -375,6 +375,12 @@ export class LobbyScene extends Phaser.Scene {
       this.showMessage(status.lastError, true);
     }
     this.shownError = status.lastError;
+
+    this.renderLastResult();
+
+    // Joining a room hides the panel the focused button was in, which drops the
+    // ring to <body>. Put it on the thing the player is most likely to want next.
+    this.screen.nav.ensureFocus(inRoom ? this.teamButton : this.createButton);
   }
 
   private showMessage(text: string, bad: boolean): void {
@@ -465,7 +471,9 @@ export class LobbyScene extends Phaser.Scene {
   private renderLastResult(): void {
     const result = this.session.finalResult;
     const config = this.session.config;
-    if (result === null || config === null) {
+    // Only while still in the room it was played in. After leaving, the box
+    // score's Rematch button would be pointing at a room this client has left.
+    if (result === null || config === null || !this.inRoom()) {
       this.lastResultPanel.hidden = true;
       return;
     }
