@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { RENDER } from '@dfhl/shared';
 
+import { audio } from './audio/index.js';
 import { MatchSession } from './net/session.js';
 import { ControlsScene } from './scenes/ControlsScene.js';
 import { LinePickerScene } from './scenes/LinePickerScene.js';
@@ -87,6 +88,19 @@ function fitCanvas(): void {
   const width = Math.max(320, Math.floor(window.innerWidth));
   const height = Math.max(240, Math.floor(window.innerHeight));
   game.scale.resize(width, height);
+}
+
+/*
+ * Audio starts on the player's first real gesture, not before.
+ *
+ * Browsers refuse to run an AudioContext until the page has been interacted
+ * with, and one created earlier lands in "suspended" and stays there — so the
+ * horn on the first goal would never sound. These listeners are `once` and cover
+ * every way into the game: a click, a key, or a gamepad button pressed on the
+ * title screen.
+ */
+for (const type of ['pointerdown', 'keydown', 'gamepadconnected'] as const) {
+  window.addEventListener(type, () => audio.unlock(), { once: true });
 }
 
 window.addEventListener('resize', fitCanvas);

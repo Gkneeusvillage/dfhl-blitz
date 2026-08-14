@@ -52,6 +52,7 @@ import Phaser from 'phaser';
 import { RINK, TICK_RATE, emptyInput } from '@dfhl/shared';
 import type { GamePhase, PlayerInput, TeamSide } from '@dfhl/shared';
 
+import { audio, playEvents } from '../audio/index.js';
 import { createInputSource, type InputRouter } from '../input/index.js';
 import type { InputSource } from '../input/source.js';
 import type { RenderView } from '../net/interpolation.js';
@@ -78,6 +79,15 @@ const RTT_WARN_MS = 140;
 
 /** How long the readout stays up after the link recovers, so a spike is readable. */
 const NET_HOLD_MS = 2500;
+
+/** How fast the shake budget bleeds off, in units per second. */
+const SHAKE_DECAY_PER_SECOND = 3.2;
+
+/** Peak camera offset at a full-strength shake, in pixels. */
+const SHAKE_MAX_PIXELS = 11;
+
+/** How long the goal light takes to fade. */
+const GOAL_FLASH_SECONDS = 1.1;
 
 /** Phase text worth putting on screen; live play needs no label. */
 const PHASE_LABEL: Partial<Record<GamePhase, string>> = {
@@ -122,6 +132,12 @@ export class MatchScene extends Phaser.Scene {
   private startWasDown = false;
   private netVisibleForMs = 0;
   private unsubscribes: Array<() => void> = [];
+
+  /** Decaying 0..1.5 shake budget; see `addShake`. */
+  private shake = 0;
+  /** Decaying 0..1 goal-light intensity. */
+  private goalFlash = 0;
+  private flashNode!: HTMLDivElement;
 
   constructor() {
     super('Match');
@@ -190,8 +206,67 @@ export class MatchScene extends Phaser.Scene {
     if (view === null) return;
 
     this.periodLog.observe(view.period, view.phase, view.score, view.shootoutScore);
+
+    // Sound and screen feel come from the same call, so the horn and the flash
+    // can never land on different frames.
+    const cue = playEvents(view.events);
+    if (cue.shake > 0) this.addShake(cue.shake);
+    if (cue.goalFor !== null) this.flashGoal(cue.goalFor);
+    this.stepFeel(delta);
+
     this.drawHud(view);
     this.drawEntities(view);
+  }
+
+  /**
+   * Screen shake, as a decaying budget rather than a timed animation.
+   *
+   * Events add to it and every frame bleeds it away, so a goal during a scramble
+   * shakes harder than a goal on a clean breakaway without anything having to
+   * coordinate them. The offset is applied to the camera scroll rather than to
+   * the drawn positions, so the HUD — which is DOM, over the top — stays
+   * perfectly still. A shaking scoreboard reads as a bug.
+   */
+  private addShake(amount: number): void {
+    this.shake = Math.min(1.5, this.shake + amount);
+  }
+
+  private stepFeel(delta: number): void {
+    const seconds = delta / 1000;
+
+    if (this.shake > 0.001) {
+      this.shake = Math.max(0, this.shake - seconds * SHAKE_DECAY_PER_SECOND);
+      const magnitude = this.shake * SHAKE_MAX_PIXELS;
+      // Deterministic wobble: a sine pair rather than random, so the shake reads
+      // as an impact rather than as noise, and never lands on a jarring jump.
+      const t = this.time.now / 1000;
+      this.cameras.main.setScroll(
+        Math.sin(t * 97) * magnitude,
+        Math.cos(t * 113) * magnitude,
+      );
+    } else if (this.cameras.main.scrollX !== 0 || this.cameras.main.scrollY !== 0) {
+      this.cameras.main.setScroll(0, 0);
+    }
+
+    if (this.goalFlash > 0) {
+      this.goalFlash = Math.max(0, this.goalFlash - seconds / GOAL_FLASH_SECONDS);
+      this.flashNode.style.opacity = String(this.goalFlash * 0.42);
+      this.flashNode.hidden = this.goalFlash <= 0;
+    }
+  }
+
+  /** The goal light: the scoring team's own colour, which is the point of it. */
+  private flashGoal(side: TeamSide): void {
+    const config = this.session.config;
+    const color =
+      config === null
+        ? '#ffffff'
+        : side === 'home'
+          ? config.home.config.primaryColor
+          : config.away.config.primaryColor;
+    this.flashNode.style.background = `radial-gradient(circle at 50% 50%, ${color} 0%, transparent 72%)`;
+    this.flashNode.hidden = false;
+    this.goalFlash = 1;
   }
 
   private teardown(): void {
@@ -371,6 +446,17 @@ export class MatchScene extends Phaser.Scene {
     const home = config?.home.config ?? null;
     const away = config?.away.config ?? null;
 
+    /*
+     * The goal light, as a DOM layer rather than a canvas fill.
+     *
+     * It has to cover the whole window including the letterboxing beside the
+     * sheet, and it must not move with the shake — the flash is the building
+     * reacting, not the camera. `pointer-events: none` keeps it out of the way
+     * of the match menu underneath it.
+     */
+    this.flashNode = div('hud__flash');
+    this.flashNode.hidden = true;
+
     this.homeGoals = div('hud__goals', '0');
     this.awayGoals = div('hud__goals', '0');
     this.clockNode = div('hud__clock mono', '0:00');
@@ -418,7 +504,8 @@ export class MatchScene extends Phaser.Scene {
     this.curtain.hidden = true;
 
     this.hud = div('dfhl-hud');
-    this.hud.append(bar, this.phaseNode, div('hud__spacer'), foot, this.curtain);
+    // Flash first so it paints under the scoreboard rather than washing it out.
+    this.hud.append(this.flashNode, bar, this.phaseNode, div('hud__spacer'), foot, this.curtain);
     document.body.append(this.hud);
   }
 
@@ -558,8 +645,21 @@ export class MatchScene extends Phaser.Scene {
         'This is an online match, so nothing stops while this is open — your skater will coast.',
       ),
     );
+    // Sound lives in the menu rather than only on a settings screen: the moment
+    // a player wants it off is mid-match, and the choice persists.
+    const soundButton = button(audio.muted ? 'Sound: off' : 'Sound: on', {
+      className: 'btn--ghost',
+      onClick: () => {
+        audio.setMuted(!audio.muted);
+        write(soundButton, audio.muted ? 'Sound: off' : 'Sound: on');
+        // Confirm audibly when turning it back on, so the button proves itself.
+        if (!audio.muted) audio.play('uiSelect');
+      },
+    });
+
     menu.addFooter(
       button('Resume', { className: 'btn--primary', onClick: () => this.closeMenu() }),
+      soundButton,
       button('Controls', {
         className: 'btn--ghost',
         onClick: () => {

@@ -473,6 +473,25 @@ const CSS = `
 
 .hud__spacer { flex: 1 1 auto; }
 
+/*
+ * The goal light.
+ *
+ * Absolutely positioned over the whole window rather than drawn on the canvas,
+ * so it covers the letterboxing beside the sheet too and does NOT ride the
+ * camera shake — the flash is the building reacting to the goal, and a flash
+ * that shakes with the camera reads as a rendering glitch. Opacity is driven
+ * per-frame from the scene; the transition here only smooths the final fade-out
+ * once the scene stops writing to it.
+ */
+.hud__flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
 .hud__foot {
   width: min(60em, 96vw);
   display: flex;
