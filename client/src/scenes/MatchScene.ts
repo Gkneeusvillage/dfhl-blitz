@@ -61,6 +61,7 @@ import { PeriodLog } from '../data/periods.js';
 import { colorToInt } from '../data/teams.js';
 import { surname } from '../data/rosters.js';
 import { createRinkTransform, drawRink, type RinkTransform } from '../render/rink.js';
+import { SPRITE_FEET, bakeMatchSprites, spriteFor } from '../render/sprites.js';
 import { UiScreen, button, div, ensureStyles, inkOn, write } from '../ui/index.js';
 
 const SKATER_RADIUS_FEET = 1.6;
@@ -111,6 +112,8 @@ export class MatchScene extends Phaser.Scene {
   private rink!: Phaser.GameObjects.Graphics;
   private entities!: Phaser.GameObjects.Graphics;
   private nameTexts: Phaser.GameObjects.Text[] = [];
+  /** Pooled sprite images: skaters, goalies and the puck, reused every frame. */
+  private sprites: Phaser.GameObjects.Image[] = [];
 
   // HUD
   private hud!: HTMLDivElement;
@@ -152,6 +155,16 @@ export class MatchScene extends Phaser.Scene {
     // The post-game screen reads the line score off the registry: it is derived
     // from frames this scene saw, and nothing else in the system records it.
     this.registry.set('periodLog', this.periodLog);
+
+    // Bake the two teams' art before the first frame. Only the sides actually
+    // playing, so this is a few milliseconds rather than fourteen teams' worth.
+    const config = this.session.config;
+    if (config !== null) {
+      bakeMatchSprites(this, [
+        { code: config.home.code, colors: { primary: config.home.config.primaryColor, secondary: config.home.config.secondaryColor } },
+        { code: config.away.code, colors: { primary: config.away.config.primaryColor, secondary: config.away.config.secondaryColor } },
+      ]);
+    }
 
     this.rink = this.add.graphics();
     this.entities = this.add.graphics();
@@ -323,6 +336,13 @@ export class MatchScene extends Phaser.Scene {
     );
   }
 
+  /** Team code for a side, which is what the baked textures are keyed on. */
+  private sideCode(side: TeamSide): string {
+    const config = this.session.config;
+    if (config === null) return side;
+    return side === 'home' ? config.home.code : config.away.code;
+  }
+
   private sideColor(side: TeamSide): number {
     const config = this.session.config;
     if (config === null) return side === 'home' ? 0x4a90d9 : 0xd95f4a;
@@ -357,11 +377,36 @@ export class MatchScene extends Phaser.Scene {
       labelIndex++;
     };
 
+    /*
+     * Sprites are pooled Images, positioned each frame; the Graphics layer is
+     * kept only for the things that are genuinely not sprites — the heat glow,
+     * the control rings. Allocating either per frame is the classic way to make
+     * a Phaser scene stutter a minute into a match.
+     */
+    const spriteSize = SPRITE_FEET * ppf;
+    let spriteIndex = 0;
+    const place = (texture: string, x: number, y: number, alpha: number): void => {
+      let image = this.sprites[spriteIndex];
+      if (image === undefined) {
+        image = this.add.image(0, 0, texture).setOrigin(0.5);
+        this.sprites.push(image);
+      }
+      image
+        .setTexture(texture)
+        .setPosition(x, y)
+        .setDisplaySize(spriteSize, spriteSize)
+        .setAlpha(alpha)
+        .setVisible(true);
+      spriteIndex++;
+    };
+
     for (const goalie of view.goalies) {
-      const x = t.toScreenX(goalie.x);
-      const y = t.toScreenY(goalie.y);
-      g.fillStyle(this.sideColor(goalie.side), 1).fillCircle(x, y, GOALIE_RADIUS_FEET * ppf);
-      g.lineStyle(2, 0xffffff, 0.85).strokeCircle(x, y, GOALIE_RADIUS_FEET * ppf);
+      place(
+        spriteFor('goalie', this.sideCode(goalie.side), goalie.facing),
+        t.toScreenX(goalie.x),
+        t.toScreenY(goalie.y),
+        1,
+      );
     }
 
     const selfPredicted = this.session.self();
@@ -381,22 +426,23 @@ export class MatchScene extends Phaser.Scene {
       const sy = t.toScreenY(y);
       const r = SKATER_RADIUS_FEET * ppf;
 
-      if (onFire) g.fillStyle(0xff7a1a, 0.35).fillCircle(sx, sy, r * 1.8);
-      g.fillStyle(this.sideColor(skater.side), stunned ? 0.45 : 1).fillCircle(sx, sy, r);
+      // Under the sprite: heat, then the ring saying who is a person. Drawn on
+      // the Graphics layer so they sit beneath the art rather than over it.
+      if (onFire) {
+        g.fillStyle(0xff7a1a, 0.3).fillCircle(sx, sy, r * 2.1);
+        g.fillStyle(0xffd166, 0.22).fillCircle(sx, sy, r * 1.4);
+      }
+      if (isSelf) g.lineStyle(3, 0xffffff, 0.95).strokeCircle(sx, sy, r + 4);
+      else if (skater.controlledBy !== null) {
+        g.lineStyle(2, 0xffffff, 0.45).strokeCircle(sx, sy, r + 3);
+      }
 
-      // Ring the skater under this client's control, and ring any other
-      // human-driven skater more faintly, so it is obvious who is a person.
-      if (isSelf) g.lineStyle(3, 0xffffff, 1).strokeCircle(sx, sy, r + 3);
-      else if (skater.controlledBy !== null) g.lineStyle(2, 0xffffff, 0.5).strokeCircle(sx, sy, r + 1);
-
-      // Stick, so facing is readable at this size.
-      g.lineStyle(2, 0xe8eef7, 0.9).beginPath();
-      g.moveTo(sx, sy);
-      g.lineTo(sx + Math.cos(facing) * r * 2, sy + Math.sin(facing) * r * 2);
-      g.strokePath();
+      // A knocked-down skater fades rather than vanishing, so you can still see
+      // where the body you have to skate around actually is.
+      place(spriteFor('skater', this.sideCode(skater.side), facing), sx, sy, stunned ? 0.5 : 1);
 
       const name = this.names.get(skater.playerId);
-      if (name !== undefined) label(name, sx, sy + r + 3, isSelf ? '#ffffff' : '#cfdcef');
+      if (name !== undefined) label(name, sx, sy + r + 6, isSelf ? '#ffffff' : '#cfdcef');
     }
 
     for (let i = labelIndex; i < this.nameTexts.length; i++) this.nameTexts[i].setVisible(false);
@@ -414,9 +460,16 @@ export class MatchScene extends Phaser.Scene {
      */
     const carried = this.session.carriedPuck();
     const puck = carried ?? view.puck;
-    const radius = Math.max(3, PUCK_RADIUS_FEET * ppf * 1.6);
-    g.fillStyle(0x0a0d14, 1).fillCircle(t.toScreenX(puck.x), t.toScreenY(puck.y), radius);
-    g.lineStyle(1, 0xffffff, 0.7).strokeCircle(t.toScreenX(puck.x), t.toScreenY(puck.y), radius);
+    place(
+      'dfhl:puck',
+      t.toScreenX(puck.x),
+      t.toScreenY(puck.y),
+      1,
+    );
+
+    // Retire any sprite the frame did not use, rather than leaving a ghost
+    // skater standing where somebody was two shifts ago.
+    for (let i = spriteIndex; i < this.sprites.length; i++) this.sprites[i].setVisible(false);
   }
 
   /**
