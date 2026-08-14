@@ -254,9 +254,67 @@ covers it over a real socket. `"../../etc"` normalizes to `"ETC"` and is simply 
   of the netcode tests under mutation (6). Multi-seed match agreement (5) is covered by the bot
   harness, and bandwidth by the Phase 3 measurements above.
 
-### Aspect D — UI/UX: still UNINSPECTED
+### Aspect D — UI/UX — inspected by the orchestrator, directly
 
-Three attempts, all killed by session limits. Nothing about the Phase 4 UI has been independently
-verified. The highest-value check remains the netcode seam: `MatchScene` must draw the local skater
-from `session.self()` and everything else from the interpolated view. If a rewrite collapses those,
-the player's own skater renders 100 ms late and it reads as bad netcode rather than a UI bug.
+Three agent attempts were killed by session limits, so this was done inline, same as the netcode.
+
+**Criterion 7 — the netcode seam — PASSES.** `MatchScene.drawEntities` takes the controlled
+skater's x, y, facing, stun and onFire from `session.self()` and every other entity from the
+interpolated view; turbo and heat read off the predicted self too. The Phase 4 rewrite preserved it
+and its header now explains why it exists.
+
+**Criterion 2 — real roster data — PASSES.** The client imports the real artefact: 691 players from
+8,624 source rows. All 14 franchises are present, each has a goalie and enough players to dress, and
+`buildDefaultLineup` + `validateLineup` succeed for every one. Ratings are genuine and varied — 46
+distinct `overall` values spanning 40-96. Spot-checked: McDavid on QUE at 95, MacKinnon on CGS at
+96, Crosby on CGS at 89.
+
+**Criterion 1 — no dead ends — PASSES** after one fix. The full transition graph was mapped from
+every `scene.start`/`go` call; every scene has at least one exit.
+
+**Criterion 6 — responsive — PASSES, and the recorded 375 px overflow is genuinely fixed.** Driven
+into a real room (code Z826) at 375x812: 12 controls, none off-screen, none covered by the canvas,
+no horizontal scroll. `document.elementFromPoint` on each control's centre was the test.
+
+**Criterion 8 — boot robustness — PASSES.** The game booted with the WebGL renderer and the Title
+scene active in a window reporting 0x0, with no "Incomplete Attachment". See the finding below for
+what that boot left behind.
+
+**Criterion 5 — focus ring — verified by reading.** The ring is on `:focus`, not `:focus-visible`,
+which is correct and deliberate: a gamepad moves focus through `element.focus()`, and
+`:focus-visible` suppresses the ring for exactly that. A runtime probe reported "no ring" and was a
+false negative for the same reason.
+
+#### Finding: the canvas could be wrong and stay wrong — FIXED
+
+`fitCanvas` ran at boot while the window reported 0x0, clamped to its 320x240 floor, and never ran
+again — measured exactly that, a 320x240 canvas inside a 1280x720 window, the game running happily
+in a corner. Both of its triggers are events (`resize`, `visibilitychange`) and neither fires for a
+window that gains size while still hidden. A `ResizeObserver` on the parent now watches the box
+rather than the events. Verified: after the fix the canvas tracks the window exactly at 1920x1080.
+
+#### Finding: the carried puck was drawn 100 ms behind the stick holding it — FIXED
+
+Found by reasoning about the seam rather than by looking at it. The local skater is drawn predicted
+and the puck was always drawn from the interpolated view — but a carried puck is pinned to its
+carrier's stick by the simulation, so the two were on different clocks. The puck trailed the stick
+by interpolation-delay x carrier speed, about 2.7 ft at a skill-65 skater's top speed: most of a
+body length, on the most common action in the game. `Predictor.carriedPuck()` now returns the
+predicted puck ONLY while this client's own skater carries it, with the same reconciliation offset;
+a loose puck or an opponent's stays on the honest 100 ms delay.
+
+#### Finding: the controls screen could refuse to close — FIXED
+
+`ControlsScene.goBack` did nothing at all when `returnTo` named an unregistered scene, on the
+reasoning that staying put beats a black screen. But this is the screen a player opens *because*
+their controller is not working, so the failure it produced was the cruellest available: no pad, and
+a Back button that silently refuses. It now falls back to Title, which is always registered.
+
+#### Not covered by this pass
+
+- **Criterion 3 (line picker)** and **criterion 4 (HUD matches the snapshot)** were not driven.
+- **Criterion 5's full walk** — completing the entire flow on a mocked gamepad with no mouse — was
+  not driven; only the ring itself was verified.
+- **Canvas tracking at 2560x1440** read 1920x1080 and could not be attributed: with the pane hidden
+  and nothing compositing, layout is stale, so this is as likely to be the harness as the game. It
+  passed cleanly at 1920x1080. Worth one look in a real window.

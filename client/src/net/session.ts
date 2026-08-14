@@ -226,6 +226,14 @@ export class MatchSession {
     return this.predictor?.self() ?? null;
   }
 
+  /**
+   * The predicted puck, but only while this client's skater is carrying it.
+   * Null otherwise, including for a loose puck — see `Predictor.carriedPuck`.
+   */
+  carriedPuck(): { x: number; y: number } | null {
+    return this.predictor?.carriedPuck() ?? null;
+  }
+
   /** Null outside a match. The inspector and the bot harness both read this. */
   metrics(): PredictionMetrics | null {
     return this.predictor?.metrics() ?? null;

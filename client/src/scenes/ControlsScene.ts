@@ -224,9 +224,18 @@ export class ControlsScene extends Phaser.Scene {
 
   private goBack(): void {
     this.exitHeldMs = 0;
-    // The scene this returns to belongs to pair D's menu flow; if it is not
-    // registered yet, staying put beats crashing into a black screen.
-    if (this.game.scene.getScene(this.returnTo) !== null) this.scene.start(this.returnTo);
+    /*
+     * Always leave. Falling back to the title screen rather than staying put.
+     *
+     * This used to do nothing at all when `returnTo` named a scene that was not
+     * registered, on the reasoning that staying beats a black screen. But this is
+     * the screen a player opens BECAUSE their controller is not working, so the
+     * failure mode it created was the cruellest one available: no pad, and a Back
+     * button that silently refuses. Title is always registered — it is the boot
+     * scene — so there is always somewhere to go.
+     */
+    const target = this.game.scene.getScene(this.returnTo) !== null ? this.returnTo : 'Title';
+    this.scene.start(target);
   }
 
   // -------------------------------------------------------------------------

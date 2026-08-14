@@ -326,7 +326,19 @@ export class MatchScene extends Phaser.Scene {
 
     for (let i = labelIndex; i < this.nameTexts.length; i++) this.nameTexts[i].setVisible(false);
 
-    const puck = view.puck;
+    /*
+     * The puck follows the same rule as the skaters: predicted when it is ours,
+     * interpolated otherwise.
+     *
+     * A carried puck is pinned to its carrier's stick by the simulation, so
+     * drawing our own skater from prediction and the puck from the playout
+     * buffer put the two on different clocks and the puck trailed the stick
+     * holding it by roughly interpolation-delay x speed. `carriedPuck()` is null
+     * for a loose puck or anyone else's, which keeps the honest 100 ms delay
+     * everywhere prediction would be a guess about another human.
+     */
+    const carried = this.session.carriedPuck();
+    const puck = carried ?? view.puck;
     const radius = Math.max(3, PUCK_RADIUS_FEET * ppf * 1.6);
     g.fillStyle(0x0a0d14, 1).fillCircle(t.toScreenX(puck.x), t.toScreenY(puck.y), radius);
     g.lineStyle(1, 0xffffff, 0.7).strokeCircle(t.toScreenX(puck.x), t.toScreenY(puck.y), radius);

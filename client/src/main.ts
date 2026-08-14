@@ -94,6 +94,21 @@ window.addEventListener('resize', fitCanvas);
 // at boot and gains one without a resize event ever being dispatched.
 document.addEventListener('visibilitychange', fitCanvas);
 
+/*
+ * The backstop: watch the element, not the events.
+ *
+ * Both listeners above are event-driven, and a window that boots at 0x0 and
+ * later gains a size without dispatching either one leaves the canvas pinned at
+ * the 320x240 floor forever — measured exactly that, a 320x240 canvas inside a
+ * 1280x720 window, with the game running happily in the corner. A ResizeObserver
+ * fires on the box actually changing, whatever did or did not emit an event, so
+ * the layout can no longer be wrong and stay wrong.
+ */
+if (typeof ResizeObserver !== 'undefined') {
+  const parent = document.getElementById('game') ?? document.body;
+  new ResizeObserver(() => fitCanvas()).observe(parent);
+}
+
 /**
  * Exposed for debugging and for automated QA — the bot harness and inspector
  * agents drive the client through these. Development builds only.

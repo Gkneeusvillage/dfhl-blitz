@@ -444,6 +444,37 @@ export class Predictor {
     };
   }
 
+  /**
+   * The puck, predicted — but ONLY while this client's own skater is carrying it.
+   *
+   * A carried puck is not an independent object: the simulation pins it to the
+   * carrier's stick every tick. So when we draw our own skater from prediction
+   * and the puck from the 100 ms playout buffer, the two are being drawn from
+   * different moments in time, and the puck trails the stick that is supposedly
+   * holding it by (interpolation delay x carrier speed) — about 2.7 ft at a
+   * skill-65 skater's top speed, which is most of a body length, on the single
+   * most common action in the game.
+   *
+   * Deliberately narrow: it returns null the moment anyone else has the puck, or
+   * it is loose. A puck in flight or on an opponent's stick is exactly the case
+   * where prediction is a guess about a human we cannot see, and it stays on the
+   * honest 100 ms delay with everything else.
+   */
+  carriedPuck(): { x: number; y: number } | null {
+    const skater = this.selfSkater();
+    const state = this.predicted;
+    if (skater === null || state === undefined || state === null) return null;
+    if (state.puck.carrierId !== skater.id) return null;
+
+    // The same offset the skater is drawn with, so the puck rides the corrected
+    // stick rather than the raw predicted one.
+    const applies = this.offsetSkaterId === skater.id;
+    return {
+      x: state.puck.x + (applies ? this.offsetX : 0),
+      y: state.puck.y + (applies ? this.offsetY : 0),
+    };
+  }
+
   metrics(): PredictionMetrics {
     let p95 = 0;
     if (this.errorCount > 0) {
