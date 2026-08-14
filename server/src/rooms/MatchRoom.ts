@@ -154,7 +154,27 @@ export class MatchRoom extends Room {
   // ---------------------------------------------------------------------------
 
   override async onCreate(options: JoinOptions): Promise<void> {
-    const requested = typeof options?.code === 'string' ? normalizeRoomCode(options.code) : '';
+    const supplied = typeof options?.code === 'string' ? options.code.trim() : '';
+    const requested = normalizeRoomCode(supplied);
+
+    /*
+     * Asking for a room and asking for no room are different questions, and the
+     * normalized code cannot tell them apart.
+     *
+     * `normalizeRoomCode` strips everything outside the code alphabet, so "!!!!"
+     * and "----" both come back as the empty string — indistinguishable from a
+     * player who supplied no code and means to create a room. Treating them the
+     * same put a typo straight down the create path: the player who fat-fingered
+     * the code got their own empty room, reported that they had joined, and sat
+     * there while their friend waited in the real one. That is the exact failure
+     * the block below exists to prevent, arriving through the door beside it.
+     */
+    if (supplied.length > 0 && requested.length === 0) {
+      throw new ServerError(
+        MatchmakeErrorCode.MATCHMAKE_INVALID_CRITERIA,
+        `ROOM_NOT_FOUND: "${supplied}" is not a room code`,
+      );
+    }
 
     if (requested.length > 0) {
       // Reaching onCreate with a code in hand means matchmaking searched the

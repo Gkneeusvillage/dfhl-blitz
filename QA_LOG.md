@@ -207,3 +207,56 @@ an environment limitation, not a defect; it needs a human with the pane open, or
 **Genuine UI finding:** at a 375 px wide viewport the lobby overflows — the Ready and Leave buttons
 land below the fold at y=858. Fine for the PC target, but pair D should make the lobby fit a narrow
 window.
+
+### Server authority — inspected by the orchestrator, directly
+
+Five attempts to run this as an agent were killed by network failures and session limits, burning
+roughly 1.5M tokens for no output. The sixth attempt was the orchestrator writing the malicious
+client itself. That is the only reason this section exists, and it is worth recording as a process
+note: past a certain failure rate, doing the work inline beats retrying the delegation.
+
+A hostile client attacked a live server holding a real two-player match. **11 of 13 checks passed.**
+
+| Attack | Result |
+|---|---|
+| Non-host sends `StartMatch` and `Settings` | refused; no match started, settings unchanged |
+| Spoofed `snapshot` / `matchEnd` / `lobby` / `welcome` claiming 99-0 | authoritative score unmoved |
+| Input ticks at 2^40, -999999, MAX_SAFE_INTEGER | 3 refused, `ackTick` stayed -1 |
+| Axes at ±99999, NaN, Infinity, `'127'`, `[]`, `{}` | no NaN anywhere, nobody teleported, puck sane |
+| A single 20,000-input payload | survived; input buffer bounded (0 pending) |
+| Input flood, 172 packets as fast as the socket allowed | survived |
+| Malformed message types, `null` bodies, non-array `inputs` | survived |
+| The match after all of it | still simulating at tick 416, score intact |
+
+Nothing a client sent moved authoritative state, crashed the server, or wedged a room. Room
+disposal and leak behaviour were checked separately and are clean: a room goes away once its last
+client leaves, and eight create/leave cycles left nothing listed.
+
+#### Finding: a junk room code silently created a room — FIXED
+
+`normalizeRoomCode` strips everything outside the code alphabet, so `"!!!!"`, `"----"` and `"@@@"`
+all come back as the empty string — which `onCreate` could not tell apart from a player who supplied
+no code and means to create a room. A fat-fingered code therefore went straight down the create
+path: the player got their own empty room, was told they had joined, and sat there while their
+friend waited in the real one. This is the precise failure the code system was designed to prevent,
+arriving through the door beside the check written to stop it. `onCreate` now distinguishes "no code
+supplied" from "a code was supplied and it normalized to nothing", and `tools/roomcode.test.ts`
+covers it over a real socket. `"../../etc"` normalizes to `"ETC"` and is simply a code nobody holds.
+
+#### Accepted debt
+
+- **Invalid payloads to KNOWN message types are ignored without an error reply.** An unknown message
+  type does answer with `BAD_REQUEST`, but a `SelectTeam` carrying a nonsense team code, or a
+  `SelectLineup` with an empty lineup, is dropped silently — so a buggy client believes it succeeded.
+  Not exploitable and not a crash; the protocol already defines the `Error` message for it. Worth
+  wiring up in Phase 5.
+- **Criteria not covered by this pass:** reconnect (2), wire determinism (4), and the meaningfulness
+  of the netcode tests under mutation (6). Multi-seed match agreement (5) is covered by the bot
+  harness, and bandwidth by the Phase 3 measurements above.
+
+### Aspect D — UI/UX: still UNINSPECTED
+
+Three attempts, all killed by session limits. Nothing about the Phase 4 UI has been independently
+verified. The highest-value check remains the netcode seam: `MatchScene` must draw the local skater
+from `session.self()` and everything else from the interpolated view. If a rewrite collapses those,
+the player's own skater renders 100 ms late and it reads as bad netcode rather than a UI bug.
