@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { AXIS_QUANT } from '@dfhl/shared';
+import { AXIS_QUANT, STICK_DEADZONE } from '@dfhl/shared';
 
 import {
   GAMEPAD_BINDINGS,
@@ -152,12 +152,24 @@ describe('GamepadInputSource — the stick', () => {
     expect(diagonal.moveX).toBe(diagonal.moveY);
   });
 
-  it('lets a drifting stick through only once it is genuinely off centre', () => {
-    const drift = padSlot([makePad({ axes: [0.3, 0] })]).source.sample(1);
-    expect(drift.moveX).toBeGreaterThan(0);
-    // …but barely. The first movement past the deadzone must not be a jump to
-    // 22% speed, which is what an unscaled threshold would emit.
-    expect(drift.moveX).toBeLessThan(AXIS_QUANT * 0.1);
+  it('lets a stick through only once it is genuinely off centre, and then usefully', () => {
+    const nudge = padSlot([makePad({ axes: [0.3, 0] })]).source.sample(1);
+    expect(nudge.moveX).toBeGreaterThan(0);
+
+    /*
+     * The floor is the SIMULATION's threshold, not zero.
+     *
+     * This used to assert the first movement was under 10% of full deflection.
+     * That reads as "start gently", but the simulation ignores any stick under
+     * STICK_DEADZONE — 15.24 quantized units — so the assertion was in fact
+     * demanding a push that gets transmitted and then discarded. It was the
+     * dead band, written down as a requirement. `stickOf` now maps the live zone
+     * onto [STICK_DEADZONE, 1] so the gentlest push is the slowest speed that
+     * actually exists.
+     */
+    expect(nudge.moveX).toBeGreaterThanOrEqual(STICK_DEADZONE * AXIS_QUANT);
+    // Still a nudge, though: nowhere near half speed.
+    expect(nudge.moveX).toBeLessThan(AXIS_QUANT * 0.35);
   });
 
   it('reaches the quantized extreme at full deflection', () => {

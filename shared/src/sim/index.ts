@@ -393,5 +393,11 @@ export function skatersOnIce(state: GameSimState, side: TeamSide): SkaterSimStat
  * also star-exports.
  */
 export { isLive, puckCarrier, skaterById, goalieFor } from './context.js';
+
+/**
+ * The stick threshold, re-exported so the client's input layer can agree with
+ * the simulation instead of guessing at it. See the note on the constant.
+ */
+export { STICK_DEADZONE, stickVector } from './skater.js';
 export { oneTimerTicks } from './actions.js';
 export type { SimContext } from './context.js';

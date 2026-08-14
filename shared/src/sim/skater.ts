@@ -16,8 +16,15 @@ import type { SimContext } from './context.js';
 import { skaterAttrs } from './context.js';
 import { applyFriction, clampSpeed, integrate } from './physics.js';
 
-/** Dead zone below which a quantized stick reads as no input at all. */
-const STICK_DEADZONE = 0.12;
+/**
+ * Dead zone below which a quantized stick reads as no input at all.
+ *
+ * Exported because the client has to agree with it. A device layer that decides
+ * "the stick is being pushed" at a lower threshold than the simulation's is not a
+ * cosmetic mismatch: it hands the player a band where their input is transmitted,
+ * counts as intent, and still moves nobody. Both sides read this number.
+ */
+export const STICK_DEADZONE = 0.12;
 
 export interface StickVector {
   x: number;

@@ -27,7 +27,7 @@
 
 import type { PlayerInput } from '@dfhl/shared';
 
-import { GamepadInputSource } from './gamepad.js';
+import { GamepadInputSource, movesTheSkater } from './gamepad.js';
 import { KeyboardInputSource } from './keyboard.js';
 import type { InputSource } from './source.js';
 
@@ -50,6 +50,10 @@ export class InputRouter implements InputSource {
 
   private active: InputDeviceKind = 'keyboard';
   private padWasPresent = false;
+
+  /** Each device's previous sample, so control is claimed by CHANGE, not by level. */
+  private lastKeyboard: PlayerInput | null = null;
+  private lastGamepad: PlayerInput | null = null;
 
   constructor(options: InputRouterOptions = {}) {
     this.keyboard = options.keyboard ?? new KeyboardInputSource();
@@ -86,8 +90,32 @@ export class InputRouter implements InputSource {
     if (!padPresent) this.active = 'keyboard';
     this.padWasPresent = padPresent;
 
-    if (padPresent && !isIdle(fromGamepad)) this.active = 'gamepad';
-    else if (!isIdle(fromKeyboard)) this.active = 'keyboard';
+    /*
+     * Control is claimed by a CHANGE, never by a level.
+     *
+     * Reading "this device is not idle" as intent is what made a worn pad
+     * unplayable: a stick resting past its deadzone, or a sticky bumper, reports
+     * non-idle on every single tick, so the pad re-claimed control 60 times a
+     * second and the keyboard's input was discarded forever. The player had a
+     * stick that did not move them, a d-pad muted on the stick's behalf, and a
+     * dead keyboard, with nothing on screen to explain it and no way back short
+     * of unplugging the pad.
+     *
+     * A constant is not a touch. Requiring the input to differ from that same
+     * device's previous tick means a drift or a stuck button — both perfectly
+     * constant — never seize anything, while a real press or a real push is a
+     * change on its first tick and claims immediately.
+     */
+    const padTouched = padPresent && changed(this.lastGamepad, fromGamepad);
+    const keyboardTouched = changed(this.lastKeyboard, fromKeyboard);
+
+    // The pad wins a tie for the reason in the header: both at once is two hands
+    // on two devices, which is not a real case.
+    if (padTouched) this.active = 'gamepad';
+    else if (keyboardTouched) this.active = 'keyboard';
+
+    this.lastGamepad = fromGamepad;
+    this.lastKeyboard = fromKeyboard;
 
     return this.active === 'gamepad' ? fromGamepad : fromKeyboard;
   }
@@ -103,7 +131,7 @@ export function createInputSource(options: InputRouterOptions = {}): InputRouter
   return new InputRouter(options);
 }
 
-/** Nothing asked for this tick — no direction, no button. */
+/** Nothing asked for this tick — no direction at all, no button. Literal. */
 export function isIdle(input: PlayerInput): boolean {
   return (
     input.moveX === 0 &&
@@ -113,4 +141,47 @@ export function isIdle(input: PlayerInput): boolean {
     !input.turbo &&
     !input.switchPlayer
   );
+}
+
+/**
+ * Is this device asking for something the simulation would ACT on?
+ *
+ * Deliberately not `!isIdle`. `isIdle` is a literal "the bytes are all zero",
+ * which is the right question for a diagnostics readout and the wrong one for
+ * arbitration: a worn stick emits a handful of units forever, which is not zero
+ * and is also not a request, and reading it as one is what locked players out.
+ */
+function hasIntent(input: PlayerInput): boolean {
+  return (
+    movesTheSkater(input.moveX, input.moveY) ||
+    input.shoot ||
+    input.pass ||
+    input.turbo ||
+    input.switchPlayer
+  );
+}
+
+/**
+ * Did this device's reading change in a way a player would recognise as acting?
+ *
+ * Buttons compare directly. The direction compares on whether the simulation
+ * would ACT on it, so a stick wandering between 3 and 6 units of drift — which a
+ * worn stick does constantly — is the same "nothing" on both ticks and never
+ * registers as a touch.
+ */
+function changed(previous: PlayerInput | null, current: PlayerInput): boolean {
+  if (previous === null) return hasIntent(current);
+  if (
+    previous.shoot !== current.shoot ||
+    previous.pass !== current.pass ||
+    previous.turbo !== current.turbo ||
+    previous.switchPlayer !== current.switchPlayer
+  ) {
+    return true;
+  }
+  const wasMoving = movesTheSkater(previous.moveX, previous.moveY);
+  const isMoving = movesTheSkater(current.moveX, current.moveY);
+  if (wasMoving !== isMoving) return true;
+  // Both moving: a genuine change of direction is still the player acting.
+  return isMoving && (previous.moveX !== current.moveX || previous.moveY !== current.moveY);
 }

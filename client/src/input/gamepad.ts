@@ -41,7 +41,7 @@
  * appears.
  */
 
-import { emptyInput, quantizeAxis } from '@dfhl/shared';
+import { STICK_DEADZONE, dequantizeAxis, emptyInput, quantizeAxis } from '@dfhl/shared';
 import type { PlayerInput } from '@dfhl/shared';
 
 import type { InputSource } from './source.js';
@@ -99,11 +99,20 @@ export const DPAD_BUTTONS = {
 export const GAMEPAD_TUNING = {
   /**
    * Radial. XInput's own recommendation for the left thumbstick is
-   * 7849/32767 = 0.2395; a well-used Xbox pad rests inside about 0.15 and a
-   * DualSense inside about 0.10. 0.22 clears real drift with room to spare and
-   * still lets a deliberate nudge through sooner than the XInput figure would.
+   * 7849/32767 = 0.2395 — Microsoft's figure for where ordinary resting drift
+   * ends, on the same hardware the league will be using.
+   *
+   * This sat at 0.22, deliberately under that figure to let a deliberate nudge
+   * through sooner. That put a worn stick's REST position inside the live zone,
+   * which is the wrong side of the trade: it buys a slightly earlier nudge and
+   * costs a player whose pad never sits still. Matching the XInput figure means
+   * a resting stick reads as rest.
+   *
+   * Raising this is only half of it — on its own it moves the dead band rather
+   * than removing it. `stickOf` maps the live zone onto the simulation's own
+   * threshold, which is the other half.
    */
-  stickDeadzone: 0.22,
+  stickDeadzone: 0.24,
   /**
    * Anything past this counts as the stick being all the way over. Worn sticks
    * often cannot reach 1.0 any more, especially into a corner, and a player who
@@ -220,12 +229,24 @@ export class GamepadInputSource implements InputSource {
     const stick = this.stickOf(pad);
     const dpad = this.dpadOf(pad);
 
-    // The d-pad is a fallback, not a second input: it only speaks when the stick
-    // is silent, so a player resting a thumb on the pad while pushing the stick
-    // cannot produce a direction neither control was asked for.
-    const live = stick.x !== 0 || stick.y !== 0;
-    input.moveX = zeroless(quantizeAxis(live ? stick.x : dpad.x));
-    input.moveY = zeroless(quantizeAxis(live ? stick.y : dpad.y));
+    /*
+     * The d-pad is a fallback, not a second input: it only speaks when the stick
+     * is silent, so a player resting a thumb on the pad while pushing the stick
+     * cannot produce a direction neither control was asked for.
+     *
+     * "Silent" is judged on what this source actually EMITS, not on the raw float
+     * being non-zero. Those differ: a stick inside the deadzone conditions to
+     * exactly zero, but a value that survives conditioning can still quantize to
+     * nothing, and a d-pad muted by a stick that emitted nothing left the player
+     * with no direction at all. `stickOf` now guarantees anything it passes is
+     * above the simulation's own threshold, so `live` and "the skater moves" are
+     * the same statement — which is checked, not assumed.
+     */
+    const stickX = zeroless(quantizeAxis(stick.x));
+    const stickY = zeroless(quantizeAxis(stick.y));
+    const live = movesTheSkater(stickX, stickY);
+    input.moveX = live ? stickX : zeroless(quantizeAxis(dpad.x));
+    input.moveY = live ? stickY : zeroless(quantizeAxis(dpad.y));
 
     // Level-triggered, matching the keyboard and what the sim is written
     // against: `windup` counts the ticks `shoot` has been held rather than
@@ -347,9 +368,24 @@ export class GamepadInputSource implements InputSource {
     const travel = Math.min(1, (magnitude - stickDeadzone) / (stickSaturation - stickDeadzone));
     const eased = Math.pow(travel, responseExponent);
 
+    /*
+     * The live zone lands on [STICK_DEADZONE, 1], not [0, 1].
+     *
+     * The simulation ignores any stick under `STICK_DEADZONE`, so mapping from
+     * zero left a band — every push from this source's deadzone up to roughly
+     * raw 0.40 — where the input was conditioned, quantized, transmitted, and
+     * then thrown away at the far end. The player pushed the stick and nothing
+     * moved. Starting the live zone AT the simulation's threshold means the first
+     * movement past the deadzone is the slowest speed that actually exists,
+     * rather than the fastest speed that does nothing.
+     *
+     * The ease still shapes the range; it just shapes a range the sim will act on.
+     */
+    const scaled = STICK_DEADZONE + eased * (1 - STICK_DEADZONE);
+
     // Scale the unit vector, so the direction the player pushed survives intact
     // and only the amount is conditioned.
-    return { x: (x / magnitude) * eased, y: (y / magnitude) * eased };
+    return { x: (x / magnitude) * scaled, y: (y / magnitude) * scaled };
   }
 
   /** Digital fallback: the same full-deflection values the keyboard produces. */
@@ -427,6 +463,20 @@ function axisOf(pad: Gamepad, index: number): number {
  */
 function zeroless(value: number): number {
   return value === 0 ? 0 : value;
+}
+
+/**
+ * Would these quantized axes actually move a skater?
+ *
+ * The authority is `STICK_DEADZONE` in the simulation, dequantized exactly the
+ * way `stickVector` does it, so this can never answer differently from the code
+ * that runs the match. Anything below it is drift: transmitting it is harmless,
+ * but treating it as a deliberate push is what stranded players.
+ */
+export function movesTheSkater(quantizedX: number, quantizedY: number): boolean {
+  const x = dequantizeAxis(quantizedX);
+  const y = dequantizeAxis(quantizedY);
+  return Math.sqrt(x * x + y * y) >= STICK_DEADZONE;
 }
 
 function buttonDown(pad: Gamepad, index: number): boolean {
