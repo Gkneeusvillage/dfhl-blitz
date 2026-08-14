@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+server/dist
+server/public
+.git
+.claude
+*.log
+coverage
+*.tsbuildinfo
+.vite
+# Build artefacts are rebuilt inside the image; copying the host's would risk
+# shipping a stale client with a fresh server.

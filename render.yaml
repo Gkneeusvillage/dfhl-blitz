@@ -1,0 +1,30 @@
+# Render blueprint for DFHL Blitz.
+#
+# The native Node runtime rather than the Dockerfile, deliberately: this path is
+# `npm ci && npm run build && npm start`, which is exactly what has been run and
+# verified on a developer machine. The Dockerfile in this repo does the same
+# thing and is a fine alternative, but it has not been built and run anywhere,
+# so it is not what the league's first deploy should depend on.
+services:
+  - type: web
+    name: dfhl-blitz
+    runtime: node
+    plan: free
+    region: ohio
+
+    # `--include=dev` is load-bearing. Render sets NODE_ENV=production, which
+    # makes a plain `npm ci` skip devDependencies — and vite, tsup and typescript
+    # ARE devDependencies, so the build would fail on a missing vite with a
+    # message that points nowhere near the cause.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+
+    healthCheckPath: /health
+
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # PORT is supplied by Render and read by the server. Do not set it here.
+
+    # Websockets need no special configuration on Render; the same origin serves
+    # the client and upgrades to ws, which is why this is one service and not two.
