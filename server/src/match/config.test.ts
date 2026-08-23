@@ -19,7 +19,9 @@ const detroitLineup = (): Lineup => buildDefaultLineup(rosterFor('Det'));
 describe('roster loading', () => {
   it('finds the generated data and it is the expected export', () => {
     const rosters = loadRosters();
-    expect(rosters.playerCount).toBe(691);
+    // The recorded size of the current export. tools/build-rosters.test.ts owns
+    // the detailed per-team figures; this only proves the server found the file.
+    expect(rosters.playerCount).toBe(697);
     expect(Object.keys(rosters.teams)).toHaveLength(TEAM_CODES.length);
   });
 

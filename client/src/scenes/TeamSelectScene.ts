@@ -127,12 +127,28 @@ export class TeamSelectScene extends Phaser.Scene {
     });
     node.style.setProperty('--team', team.primaryColor);
     node.dataset.team = team.code;
+    /*
+     * A franchise too thin to dress cannot be picked.
+     *
+     * `summaryFor` returns null when `buildDefaultLineup` cannot fill two lines
+     * and a goalie, which is a real thing a Fantrax export can contain: the
+     * current one has Winnipeg with two prospects and no goalie. Leaving the
+     * button live let a player choose it and discover the problem at the puck
+     * drop, as a match that would not start. Saying so here, on the button, is
+     * the difference between a data problem and a bug.
+     */
+    if (summary === null) {
+      node.disabled = true;
+      node.classList.add('teambtn--empty');
+      node.title = `${team.displayName} has no full roster in the current export.`;
+    }
+
     node.append(
       div('teambtn__name ellipsis', team.displayName),
       div(
         'teambtn__meta ellipsis',
         summary === null
-          ? team.abbreviation
+          ? `${team.abbreviation}  ·  no roster in this export`
           : `${team.abbreviation}  ·  ${summary.starterRating} ovr  ·  ${summary.star.name}`,
       ),
     );

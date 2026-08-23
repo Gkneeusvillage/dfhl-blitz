@@ -13,6 +13,7 @@ import {
   countTeam,
   overallFromScore,
   parseFantraxCsv,
+  parseStatus,
 } from './build-rosters.js';
 import type { FantraxRow } from './build-rosters.js';
 import { TEAM_CODES, isTeamCode } from '../shared/src/types.js';
@@ -61,29 +62,37 @@ type TeamSplit = [total: number, goalies: number, defense: number, forwards: num
 const CURRENT_EXPORT: {
   sourceRows: number;
   playerCount: number;
-  freeAgentRows: number;
+  /** Rows the owner filter drops: a repeated header line plus waiver rows. */
+  rejectedRows: number;
   teams: Record<TeamCode, TeamSplit>;
   anchorScores: Record<string, number>;
 } = {
-  sourceRows: 8624,
-  playerCount: 691,
-  freeAgentRows: 7932,
+  sourceRows: 702,
+  playerCount: 697,
+  /*
+   * This export carries no free agents at all — it is a rostered-only download,
+   * unlike the first one, which had 7,932 of them. What is left to reject is the
+   * header line (columns are read positionally, so the header is just another
+   * row until the owner filter drops it), one row with an empty Status, and
+   * three waiver rows.
+   */
+  rejectedRows: 5,
   /** `total = goalies + defense + forwards`, exactly as `build:rosters` prints it. */
   teams: {
-    Det: [54, 14, 12, 28],
+    Det: [53, 16, 11, 26],
+    HFD: [52, 7, 12, 33],
     TSP: [52, 7, 15, 30],
-    HFD: [52, 8, 12, 32],
-    Jets: [51, 7, 10, 34],
     PP: [51, 12, 11, 28],
-    TOA: [51, 9, 12, 30],
-    QUE: [50, 7, 11, 32],
-    SJF: [49, 5, 15, 29],
-    HC: [49, 7, 15, 27],
+    QUE: [51, 7, 13, 31],
+    Jets: [50, 7, 12, 31],
+    SJF: [50, 5, 15, 30],
+    TOA: [50, 7, 12, 31],
+    Yotes: [50, 2, 14, 34],
     CGS: [49, 8, 12, 29],
-    Yotes: [48, 3, 14, 31],
-    CBO: [48, 11, 12, 25],
-    MW: [46, 6, 11, 29],
-    MNS: [41, 6, 8, 27],
+    HC: [49, 8, 13, 28],
+    CBO: [48, 12, 12, 24],
+    MW: [48, 6, 11, 31],
+    MNS: [44, 6, 9, 29],
   },
   /** The plan's three sanity anchors, with the Scores this export gives them. */
   anchorScores: {
@@ -106,14 +115,20 @@ function statusOf(row: FantraxRow): string {
 }
 
 const rows = parseFantraxCsv(csvText);
-const rosteredRows = rows.filter((row) => isTeamCode(statusOf(row)));
-const rejectedRows = rows.filter((row) => !isTeamCode(statusOf(row)));
+/*
+ * The test derives its expectations through `parseStatus`, the same function the
+ * pipeline uses, rather than re-implementing the rule. The export's Status column
+ * changed from a bare code to "Halifax Citadels - HC", and a second copy of that
+ * rule living here would have gone quietly wrong instead of loudly.
+ */
+const rosteredRows = rows.filter((row) => parseStatus(statusOf(row)) !== null);
+const rejectedRows = rows.filter((row) => parseStatus(statusOf(row)) === null);
 
 const csvTeamCounts = new Map<TeamCode, number>();
 for (const row of rosteredRows) {
-  const status = statusOf(row);
-  if (!isTeamCode(status)) continue;
-  csvTeamCounts.set(status, (csvTeamCounts.get(status) ?? 0) + 1);
+  const owner = parseStatus(statusOf(row));
+  if (owner === null) continue;
+  csvTeamCounts.set(owner.code, (csvTeamCounts.get(owner.code) ?? 0) + 1);
 }
 
 describe('roster pipeline', () => {
@@ -134,7 +149,7 @@ describe('roster pipeline', () => {
 
   it('gives each team exactly the players the CSV files under its code', () => {
     for (const code of TEAM_CODES) {
-      const fromCsv = rosteredRows.filter((row) => statusOf(row) === code);
+      const fromCsv = rosteredRows.filter((row) => parseStatus(statusOf(row))?.code === code);
       const fromJson = file.teams[code];
       expect({ code, count: fromJson.length }).toEqual({ code, count: csvTeamCounts.get(code) });
       expect(new Set(fromJson.map((player) => player.id))).toEqual(
@@ -168,11 +183,11 @@ describe('filtering', () => {
     }
     expect(rejectedRows).toHaveLength(rows.length - file.playerCount);
 
-    // The export really does contain both kinds of row we mean to drop.
-    const freeAgents = rejectedRows.filter((row) => statusOf(row) === 'FA');
-    expect(freeAgents.length).toBeGreaterThan(0);
+    // The export really does contain each kind of row we mean to drop, and the
+    // count is pinned so a future export that silently stops dropping them fails.
+    expect(rejectedRows).toHaveLength(CURRENT_EXPORT.rejectedRows);
     expect(rejectedRows.some((row) => row.Status.includes('<small>'))).toBe(true);
-    expect(freeAgents).toHaveLength(CURRENT_EXPORT.freeAgentRows);
+    expect(rejectedRows.some((row) => row.ID === 'ID')).toBe(true);
   });
 
   it('files every retained player under a real team code', () => {

@@ -27,6 +27,7 @@ import type {
   RostersFile,
   SkaterAttributes,
   TeamCode,
+  TeamsConfigFile,
 } from '../shared/src/types.js';
 import { Rng, seedFromString } from '../shared/src/rng.js';
 
@@ -40,6 +41,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const CSV_RELATIVE_PATH = 'data/fantrax-rosters.csv';
 export const CSV_PATH = resolve(REPO_ROOT, CSV_RELATIVE_PATH);
 export const OUTPUT_PATH = resolve(REPO_ROOT, 'shared/data/rosters.json');
+export const TEAMS_CONFIG_PATH = resolve(REPO_ROOT, 'shared/data/teams.config.json');
 
 // ---------------------------------------------------------------------------
 // Ratings derivation
@@ -209,17 +211,72 @@ export interface FantraxRow {
 
 const VALID_POSITIONS: readonly string[] = ['C', 'LW', 'RW', 'D', 'G'];
 
+/** Column order of a Fantrax export, which is positional and stable. */
+const COLUMNS = [
+  'ID', 'Player', 'Team', 'Position', 'RkOv', 'Status',
+  'Age', 'Opponent', 'Salary', 'Score', 'Ros', '+/-',
+] as const;
+
 /**
  * Salary carries commas inside quotes and names carry accents, so this goes
  * through a real parser. `split(',')` silently shreds roughly a third of the
  * file and the damage is invisible until ratings look wrong.
+ *
+ * Columns are assigned BY POSITION rather than from a header line, because a
+ * real export cannot be relied on to have one where you expect it. The file this
+ * was rewritten for has no header on line 1 — it opens on Macklin Celebrini —
+ * and carries one buried at line 498, because it is two exports concatenated.
+ * Reading `columns: true` off the first line therefore invented a header out of
+ * a player and silently lost him; reading positionally cannot. Any row that
+ * repeats the header is dropped below with the same filter that drops waivers.
  */
 export function parseFantraxCsv(csvText: string): FantraxRow[] {
-  return parse(csvText, {
-    columns: true,
+  const records = parse(csvText, {
+    columns: false,
     skip_empty_lines: true,
+    relax_column_count: true,
     bom: true,
-  }) as FantraxRow[];
+  }) as string[][];
+
+  const rows: FantraxRow[] = [];
+  for (const record of records) {
+    if (record.length < COLUMNS.length) continue;
+    const row = {} as Record<string, string>;
+    COLUMNS.forEach((name, i) => {
+      row[name] = record[i] ?? '';
+    });
+    rows.push(row as unknown as FantraxRow);
+  }
+  return rows;
+}
+
+/**
+ * The franchise a row belongs to, and what that franchise is called.
+ *
+ * The `Status` column used to be a bare code (`HC`). It now reads
+ * `Halifax Citadels - HC`: the league owner renamed the teams and put the names
+ * in the export precisely so the game would show them. So the code is taken from
+ * after the final dash, and everything before it is the display name — which
+ * makes the export the source of truth for names, and leaves jersey colours as
+ * the only thing `teams.config.json` still owns by hand.
+ *
+ * Returns null for a free agent, a waiver row, or a repeated header line, all of
+ * which simply fail to end in a known code.
+ */
+export function parseStatus(raw: string): { code: TeamCode; displayName: string } | null {
+  const status = raw.trim();
+  if (status.length === 0) return null;
+
+  const dash = status.lastIndexOf(' - ');
+  if (dash === -1) {
+    // A bare code is still valid: that is what older exports carried.
+    return isTeamCode(status) ? { code: status, displayName: status } : null;
+  }
+
+  const code = status.slice(dash + 3).trim();
+  const displayName = status.slice(0, dash).trim();
+  if (!isTeamCode(code) || displayName.length === 0) return null;
+  return { code, displayName };
 }
 
 /** Fantrax wraps ids in asterisks (`*02un4*`); the bare form is the stable key. */
@@ -316,17 +373,17 @@ export function buildRostersFile(csvText: string, options: BuildOptions): Roster
 
   const seen = new Set<string>();
   for (const row of rows) {
-    // The whitelist is the only filter that matters: it drops the ~7.9k free
-    // agents and any malformed waiver status without needing to enumerate them.
-    const status = row.Status?.trim() ?? '';
-    if (!isTeamCode(status)) continue;
+    // Ending in a known code is the only filter that matters: it drops free
+    // agents, waiver rows and any repeated header line without enumerating them.
+    const owner = parseStatus(row.Status ?? '');
+    if (owner === null) continue;
 
-    const player = derivePlayer(row, status);
+    const player = derivePlayer(row, owner.code);
     if (seen.has(player.id)) {
       throw new Error(`Duplicate player id ${player.id} (${player.name}) in the export`);
     }
     seen.add(player.id);
-    teams[status].push(player);
+    teams[owner.code].push(player);
   }
 
   for (const code of TEAM_CODES) teams[code].sort(compareForOutput);
@@ -338,6 +395,25 @@ export function buildRostersFile(csvText: string, options: BuildOptions): Roster
     playerCount: seen.size,
     teams,
   };
+}
+
+/**
+ * The franchise names carried by an export.
+ *
+ * Deliberately a second pass rather than an extra field on `buildRostersFile`.
+ * The committed `rosters.json` is compared byte for byte against a fresh build
+ * to prove the pipeline is deterministic, so one stray key on that result makes
+ * the artefact and the builder disagree forever. The names are not roster data;
+ * they belong to the team config, and they travel separately.
+ */
+export function collectDisplayNames(csvText: string): Record<TeamCode, string> {
+  const names = {} as Record<TeamCode, string>;
+  for (const row of parseFantraxCsv(csvText)) {
+    const owner = parseStatus(row.Status ?? '');
+    // Every row of a team carries the same name, so last writer wins harmlessly.
+    if (owner !== null) names[owner.code] = owner.displayName;
+  }
+  return names;
 }
 
 // ---------------------------------------------------------------------------
@@ -363,12 +439,61 @@ export function countTeam(players: RosterPlayer[]): TeamCounts {
   return { total: players.length, goalies, defense, forwards };
 }
 
+/**
+ * Can this roster actually put a team on the ice?
+ *
+ * A line is [F, F, D] and there are two of them, plus a goalie. A franchise
+ * short of that cannot be picked, and finding that out at the puck drop is far
+ * worse than finding it out here.
+ */
+export function canDress(players: RosterPlayer[]): boolean {
+  const c = countTeam(players);
+  return c.goalies >= 1 && c.defense >= 2 && c.forwards >= 4;
+}
+
+/**
+ * Refresh franchise names and abbreviations from the export, keeping colours.
+ *
+ * `teams.config.json` used to be entirely hand-owned. It is now split: the
+ * league owner renamed his teams inside Fantrax and put the names in the export
+ * so the game would follow, which makes the export the source of truth for what
+ * a team is called. Colours have no home in a Fantrax export and stay hand-owned
+ * here, so this rewrites two fields and never touches the other two.
+ *
+ * The abbreviation becomes the league's own code rather than an NHL one: the
+ * scoreboard was reading HAM for a team the league calls HC.
+ */
+function refreshTeamConfig(displayNames: Record<TeamCode, string>): string[] {
+  const config = JSON.parse(readFileSync(TEAMS_CONFIG_PATH, 'utf8')) as TeamsConfigFile;
+  const changes: string[] = [];
+
+  for (const code of TEAM_CODES) {
+    const team = config.teams[code];
+    const name = displayNames[code];
+    if (team === undefined || name === undefined || name === code) continue;
+
+    const abbreviation = code.toUpperCase();
+    if (team.displayName !== name || team.abbreviation !== abbreviation) {
+      changes.push(`${team.abbreviation} ${team.displayName}  ->  ${abbreviation} ${name}`);
+      team.displayName = name;
+      team.abbreviation = abbreviation;
+    }
+  }
+
+  if (changes.length > 0) {
+    writeFileSync(TEAMS_CONFIG_PATH, `${JSON.stringify(config, null, 2)}
+`, 'utf8');
+  }
+  return changes;
+}
+
 function main(): void {
   const csvText = readFileSync(CSV_PATH, 'utf8');
   const file = buildRostersFile(csvText, {
     sourceFile: CSV_RELATIVE_PATH,
     generatedAt: new Date().toISOString(),
   });
+  const displayNames = collectDisplayNames(csvText);
 
   mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
   writeFileSync(OUTPUT_PATH, `${JSON.stringify(file, null, 2)}\n`, 'utf8');
@@ -385,6 +510,32 @@ function main(): void {
       `  ${code.padEnd(6)} ${String(c.total).padStart(3)} = ${c.goalies}G / ${c.defense}D / ${c.forwards}F`,
     );
   }
+  const renamed = refreshTeamConfig(displayNames);
+  if (renamed.length > 0) {
+    console.log(`
+Renamed ${renamed.length} franchise(s) from the export:`);
+    for (const change of renamed) console.log(`  ${change}`);
+  }
+
+  /*
+   * A team that cannot dress is reported loudly and does NOT stop the build.
+   * Refusing to write anything would hold the other thirteen hostage to one bad
+   * row in somebody's export; the team select screen hides an undressable
+   * franchise, so the game stays correct either way.
+   */
+  const undressable = TEAM_CODES.filter((code) => !canDress(file.teams[code]));
+  if (undressable.length > 0) {
+    console.log('');
+    for (const code of undressable) {
+      const c = countTeam(file.teams[code]);
+      console.log(
+        `WARNING: ${code} cannot ice a lineup - ${c.total} players ` +
+          `(${c.goalies}G / ${c.defense}D / ${c.forwards}F), needs at least 1G / 2D / 4F. ` +
+          'It will not be selectable until the export includes its roster.',
+      );
+    }
+  }
+
   console.log(`Wrote ${OUTPUT_PATH}`);
 }
 

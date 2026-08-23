@@ -2,14 +2,14 @@
   "teams": {
     "Det": {
       "code": "Det",
-      "displayName": "Detroit Red Wings",
+      "displayName": "Detroit Cougars",
       "abbreviation": "DET",
       "primaryColor": "#e8112d",
       "secondaryColor": "#ffffff"
     },
     "TSP": {
       "code": "TSP",
-      "displayName": "Toronto St. Pats",
+      "displayName": "Toronto Saint Pats",
       "abbreviation": "TSP",
       "primaryColor": "#2e9e4f",
       "secondaryColor": "#f4f4f0"
@@ -30,15 +30,15 @@
     },
     "PP": {
       "code": "PP",
-      "displayName": "Pittsburgh Penguins",
-      "abbreviation": "PIT",
+      "displayName": "Pittsburgh Pirates",
+      "abbreviation": "PP",
       "primaryColor": "#f7b500",
       "secondaryColor": "#101010"
     },
     "Jets": {
       "code": "Jets",
       "displayName": "Winnipeg Jets",
-      "abbreviation": "WPG",
+      "abbreviation": "JETS",
       "primaryColor": "#0e1b45",
       "secondaryColor": "#8fa3cc"
     },
@@ -51,15 +51,15 @@
     },
     "SJF": {
       "code": "SJF",
-      "displayName": "San Jose Sharks",
-      "abbreviation": "SJS",
+      "displayName": "St John Flames",
+      "abbreviation": "SJF",
       "primaryColor": "#14181d",
       "secondaryColor": "#00a8a8"
     },
     "HC": {
       "code": "HC",
-      "displayName": "Hamilton Tigers",
-      "abbreviation": "HAM",
+      "displayName": "Halifax Citadels",
+      "abbreviation": "HC",
       "primaryColor": "#ff6a13",
       "secondaryColor": "#16130f"
     },
@@ -73,21 +73,21 @@
     "Yotes": {
       "code": "Yotes",
       "displayName": "Arizona Coyotes",
-      "abbreviation": "ARI",
+      "abbreviation": "YOTES",
       "primaryColor": "#6b1f2e",
       "secondaryColor": "#d9c9a3"
     },
     "CBO": {
       "code": "CBO",
-      "displayName": "Columbus Blue Jackets",
-      "abbreviation": "CBJ",
+      "displayName": "Cape Breton Oilers",
+      "abbreviation": "CBO",
       "primaryColor": "#9aa5b1",
       "secondaryColor": "#0b2b52"
     },
     "MW": {
       "code": "MW",
-      "displayName": "Manitoba Wild",
-      "abbreviation": "MAN",
+      "displayName": "Montreal Wanders",
+      "abbreviation": "MW",
       "primaryColor": "#d81b8f",
       "secondaryColor": "#1b1020"
     },

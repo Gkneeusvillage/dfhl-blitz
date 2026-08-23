@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-29T15:00:26.312Z",
+  "generatedAt": "2026-08-23T02:25:14.686Z",
   "sourceFile": "data/fantrax-rosters.csv",
-  "sourceRows": 8624,
-  "playerCount": 691,
+  "sourceRows": 702,
+  "playerCount": 697,
   "teams": {
     "Det": [
       {
@@ -17,7 +17,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 33,
-        "score": 80.88,
+        "score": 80.83,
         "overall": 87,
         "skater": null,
         "goalie": {
@@ -154,7 +154,7 @@
         "primaryPosition": "RW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 26,
+        "age": 27,
         "score": 63.24,
         "overall": 78,
         "skater": {
@@ -178,7 +178,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 29,
-        "score": 62.53,
+        "score": 62.64,
         "overall": 78,
         "skater": null,
         "goalie": {
@@ -257,29 +257,6 @@
         "goalie": null
       },
       {
-        "id": "05gdo",
-        "name": "Luke Evangelista",
-        "nhlTeam": "NSH",
-        "teamCode": "Det",
-        "positions": [
-          "RW"
-        ],
-        "primaryPosition": "RW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 24,
-        "score": 51.8,
-        "overall": 72,
-        "skater": {
-          "skating": 71,
-          "shooting": 78,
-          "passing": 72,
-          "checking": 75,
-          "defense": 64
-        },
-        "goalie": null
-      },
-      {
         "id": "05gvo",
         "name": "Matvei Michkov",
         "nhlTeam": "PHI",
@@ -315,7 +292,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 29,
-        "score": 49.86,
+        "score": 49.38,
         "overall": 71,
         "skater": null,
         "goalie": {
@@ -419,27 +396,6 @@
         "goalie": null
       },
       {
-        "id": "05lud",
-        "name": "Dylan Garand",
-        "nhlTeam": "NYR",
-        "teamCode": "Det",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 24,
-        "score": 46.1,
-        "overall": 69,
-        "skater": null,
-        "goalie": {
-          "reflexes": 71,
-          "positioning": 66,
-          "reboundControl": 64
-        }
-      },
-      {
         "id": "060jl",
         "name": "Jiri Kulich",
         "nhlTeam": "BUF",
@@ -461,6 +417,27 @@
           "defense": 67
         },
         "goalie": null
+      },
+      {
+        "id": "05lud",
+        "name": "Dylan Garand",
+        "nhlTeam": "NYR",
+        "teamCode": "Det",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 24,
+        "score": 45.68,
+        "overall": 69,
+        "skater": null,
+        "goalie": {
+          "reflexes": 71,
+          "positioning": 66,
+          "reboundControl": 64
+        }
       },
       {
         "id": "03dug",
@@ -718,29 +695,6 @@
         "goalie": null
       },
       {
-        "id": "05ymp",
-        "name": "Kevin Korchinski",
-        "nhlTeam": "CHI",
-        "teamCode": "Det",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 22,
-        "score": 21.01,
-        "overall": 55,
-        "skater": {
-          "skating": 53,
-          "shooting": 43,
-          "passing": 52,
-          "checking": 63,
-          "defense": 67
-        },
-        "goalie": null
-      },
-      {
         "id": "06cfs",
         "name": "Florian Xhekaj",
         "nhlTeam": "MTL",
@@ -774,7 +728,7 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 26,
+        "age": 27,
         "score": 0,
         "overall": 40,
         "skater": null,
@@ -940,6 +894,48 @@
         }
       },
       {
+        "id": "06hk8",
+        "name": "Carter George",
+        "nhlTeam": "LAK",
+        "teamCode": "Det",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 20,
+        "score": 0,
+        "overall": 40,
+        "skater": null,
+        "goalie": {
+          "reflexes": 38,
+          "positioning": 41,
+          "reboundControl": 36
+        }
+      },
+      {
+        "id": "06ims",
+        "name": "Dmitri Gamzin",
+        "nhlTeam": "NYI",
+        "teamCode": "Det",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 23,
+        "score": 0,
+        "overall": 40,
+        "skater": null,
+        "goalie": {
+          "reflexes": 45,
+          "positioning": 40,
+          "reboundControl": 40
+        }
+      },
+      {
         "id": "06j7t",
         "name": "Ilya Nabokov",
         "nhlTeam": "COL",
@@ -972,7 +968,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 19,
+        "age": 20,
         "score": 0,
         "overall": 40,
         "skater": {
@@ -1094,29 +1090,6 @@
           "positioning": 43,
           "reboundControl": 41
         }
-      },
-      {
-        "id": "06xvx",
-        "name": "Tinus Luc Koblar",
-        "nhlTeam": "TOR",
-        "teamCode": "Det",
-        "positions": [
-          "C"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 19,
-        "score": 0,
-        "overall": 40,
-        "skater": {
-          "skating": 41,
-          "shooting": 39,
-          "passing": 48,
-          "checking": 37,
-          "defense": 44
-        },
-        "goalie": null
       },
       {
         "id": "070fr",
@@ -1289,7 +1262,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 27,
-        "score": 87.56,
+        "score": 87.53,
         "overall": 90,
         "skater": null,
         "goalie": {
@@ -1333,7 +1306,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 28,
-        "score": 79.45,
+        "score": 79.37,
         "overall": 86,
         "skater": null,
         "goalie": {
@@ -1376,7 +1349,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 27,
+        "age": 28,
         "score": 70.48,
         "overall": 82,
         "skater": {
@@ -1424,7 +1397,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 30,
-        "score": 66.43,
+        "score": 66.37,
         "overall": 80,
         "skater": null,
         "goalie": {
@@ -1476,6 +1449,29 @@
           "passing": 79,
           "checking": 85,
           "defense": 84
+        },
+        "goalie": null
+      },
+      {
+        "id": "03w5s",
+        "name": "Ryan McLeod",
+        "nhlTeam": "BUF",
+        "teamCode": "TSP",
+        "positions": [
+          "C"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 26,
+        "score": 59.72,
+        "overall": 76,
+        "skater": {
+          "skating": 77,
+          "shooting": 80,
+          "passing": 83,
+          "checking": 74,
+          "defense": 79
         },
         "goalie": null
       },
@@ -1583,8 +1579,8 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 24,
-        "score": 53.42,
+        "age": 25,
+        "score": 53.17,
         "overall": 73,
         "skater": null,
         "goalie": {
@@ -1674,7 +1670,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 22,
+        "age": 23,
         "score": 50.82,
         "overall": 72,
         "skater": {
@@ -1706,29 +1702,6 @@
           "passing": 68,
           "checking": 74,
           "defense": 81
-        },
-        "goalie": null
-      },
-      {
-        "id": "03ne3",
-        "name": "Frank Vatrano",
-        "nhlTeam": "ANA",
-        "teamCode": "TSP",
-        "positions": [
-          "LW"
-        ],
-        "primaryPosition": "LW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 32,
-        "score": 48.68,
-        "overall": 70,
-        "skater": {
-          "skating": 71,
-          "shooting": 79,
-          "passing": 68,
-          "checking": 68,
-          "defense": 63
         },
         "goalie": null
       },
@@ -1769,7 +1742,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 30,
-        "score": 45.1,
+        "score": 44.68,
         "overall": 68,
         "skater": null,
         "goalie": {
@@ -1789,7 +1762,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 19,
+        "age": 20,
         "score": 41.03,
         "overall": 66,
         "skater": {
@@ -1906,7 +1879,7 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 23,
+        "age": 24,
         "score": 30.82,
         "overall": 61,
         "skater": {
@@ -2318,7 +2291,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 17,
+        "age": 18,
         "score": 0,
         "overall": 40,
         "skater": {
@@ -2460,7 +2433,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 22,
-        "score": 88.72,
+        "score": 88.67,
         "overall": 91,
         "skater": null,
         "goalie": {
@@ -2549,8 +2522,8 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 35,
-        "score": 76.75,
+        "age": 36,
+        "score": 76.71,
         "overall": 85,
         "skater": null,
         "goalie": {
@@ -2571,7 +2544,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 36,
-        "score": 75.54,
+        "score": 75.49,
         "overall": 84,
         "skater": null,
         "goalie": {
@@ -2640,13 +2613,13 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 28,
-        "score": 66.66,
-        "overall": 80,
+        "score": 66.23,
+        "overall": 79,
         "skater": null,
         "goalie": {
-          "reflexes": 82,
-          "positioning": 81,
-          "reboundControl": 75
+          "reflexes": 81,
+          "positioning": 80,
+          "reboundControl": 74
         }
       },
       {
@@ -2707,7 +2680,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 32,
-        "score": 63.01,
+        "score": 63.04,
         "overall": 78,
         "skater": null,
         "goalie": {
@@ -2751,7 +2724,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 30,
+        "age": 31,
         "score": 60.47,
         "overall": 77,
         "skater": {
@@ -2926,6 +2899,29 @@
         "goalie": null
       },
       {
+        "id": "042vl",
+        "name": "Jordan Kyrou",
+        "nhlTeam": "WSH",
+        "teamCode": "HFD",
+        "positions": [
+          "RW"
+        ],
+        "primaryPosition": "RW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 28,
+        "score": 55.94,
+        "overall": 74,
+        "skater": {
+          "skating": 73,
+          "shooting": 84,
+          "passing": 75,
+          "checking": 76,
+          "defense": 65
+        },
+        "goalie": null
+      },
+      {
         "id": "03nfr",
         "name": "Evan Rodrigues",
         "nhlTeam": "NJD",
@@ -2985,7 +2981,7 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 30,
+        "age": 31,
         "score": 48.96,
         "overall": 71,
         "skater": {
@@ -2996,27 +2992,6 @@
           "defense": 80
         },
         "goalie": null
-      },
-      {
-        "id": "059mt",
-        "name": "Nicolas Daws",
-        "nhlTeam": "NJD",
-        "teamCode": "HFD",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 25,
-        "score": 44.86,
-        "overall": 68,
-        "skater": null,
-        "goalie": {
-          "reflexes": 71,
-          "positioning": 65,
-          "reboundControl": 62
-        }
       },
       {
         "id": "05w9b",
@@ -3040,6 +3015,27 @@
           "defense": 66
         },
         "goalie": null
+      },
+      {
+        "id": "059mt",
+        "name": "Nicolas Daws",
+        "nhlTeam": "NJD",
+        "teamCode": "HFD",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 25,
+        "score": 44.45,
+        "overall": 68,
+        "skater": null,
+        "goalie": {
+          "reflexes": 71,
+          "positioning": 65,
+          "reboundControl": 62
+        }
       },
       {
         "id": "04zo3",
@@ -3399,7 +3395,7 @@
         "primaryPosition": "RW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 19,
+        "age": 20,
         "score": 0,
         "overall": 40,
         "skater": {
@@ -3458,27 +3454,6 @@
         "goalie": null
       },
       {
-        "id": "06qqe",
-        "name": "Semyon Frolov",
-        "nhlTeam": "CAR",
-        "teamCode": "HFD",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 19,
-        "score": 0,
-        "overall": 40,
-        "skater": null,
-        "goalie": {
-          "reflexes": 38,
-          "positioning": 38,
-          "reboundControl": 41
-        }
-      },
-      {
         "id": "06r63",
         "name": "Tynan Lawrence",
         "nhlTeam": "STL",
@@ -3489,7 +3464,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 17,
+        "age": 18,
         "score": 0,
         "overall": 40,
         "skater": {
@@ -3619,27 +3594,6 @@
     ],
     "TOA": [
       {
-        "id": "03jw0",
-        "name": "Joey Daccord",
-        "nhlTeam": "SEA",
-        "teamCode": "TOA",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 29,
-        "score": 78.61,
-        "overall": 86,
-        "skater": null,
-        "goalie": {
-          "reflexes": 87,
-          "positioning": 90,
-          "reboundControl": 86
-        }
-      },
-      {
         "id": "03mbn",
         "name": "Mackenzie Blackwood",
         "nhlTeam": "COL",
@@ -3651,7 +3605,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 29,
-        "score": 78.14,
+        "score": 78.05,
         "overall": 85,
         "skater": null,
         "goalie": {
@@ -3672,7 +3626,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 76.05,
+        "score": 76.02,
         "overall": 84,
         "skater": null,
         "goalie": {
@@ -3701,6 +3655,29 @@
           "passing": 86,
           "checking": 92,
           "defense": 93
+        },
+        "goalie": null
+      },
+      {
+        "id": "038vb",
+        "name": "Travis Konecny",
+        "nhlTeam": "PHI",
+        "teamCode": "TOA",
+        "positions": [
+          "RW"
+        ],
+        "primaryPosition": "RW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 29,
+        "score": 70.03,
+        "overall": 81,
+        "skater": {
+          "skating": 83,
+          "shooting": 84,
+          "passing": 77,
+          "checking": 82,
+          "defense": 73
         },
         "goalie": null
       },
@@ -3799,9 +3776,33 @@
         "goalie": null
       },
       {
-        "id": "05ltj",
-        "name": "Brock Faber",
-        "nhlTeam": "MIN",
+        "id": "04amd",
+        "name": "Peyton Krebs",
+        "nhlTeam": "BUF",
+        "teamCode": "TOA",
+        "positions": [
+          "C",
+          "RW"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 25,
+        "score": 56.3,
+        "overall": 74,
+        "skater": {
+          "skating": 74,
+          "shooting": 75,
+          "passing": 80,
+          "checking": 70,
+          "defense": 73
+        },
+        "goalie": null
+      },
+      {
+        "id": "04lcs",
+        "name": "Mattias Samuelsson",
+        "nhlTeam": "BUF",
         "teamCode": "TOA",
         "positions": [
           "D"
@@ -3809,15 +3810,39 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 23,
-        "score": 61.32,
-        "overall": 77,
+        "age": 26,
+        "score": 55.46,
+        "overall": 74,
         "skater": {
-          "skating": 79,
-          "shooting": 68,
-          "passing": 77,
+          "skating": 76,
+          "shooting": 70,
+          "passing": 72,
           "checking": 83,
-          "defense": 89
+          "defense": 82
+        },
+        "goalie": null
+      },
+      {
+        "id": "05gtp",
+        "name": "Dawson Mercer",
+        "nhlTeam": "NJD",
+        "teamCode": "TOA",
+        "positions": [
+          "C",
+          "RW"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 24,
+        "score": 54.31,
+        "overall": 73,
+        "skater": {
+          "skating": 71,
+          "shooting": 72,
+          "passing": 77,
+          "checking": 74,
+          "defense": 77
         },
         "goalie": null
       },
@@ -3833,7 +3858,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 24,
-        "score": 54.31,
+        "score": 54.3,
         "overall": 73,
         "skater": null,
         "goalie": {
@@ -3841,6 +3866,29 @@
           "positioning": 78,
           "reboundControl": 67
         }
+      },
+      {
+        "id": "05ran",
+        "name": "Matt Coronato",
+        "nhlTeam": "CGY",
+        "teamCode": "TOA",
+        "positions": [
+          "RW"
+        ],
+        "primaryPosition": "RW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 23,
+        "score": 53.21,
+        "overall": 73,
+        "skater": {
+          "skating": 78,
+          "shooting": 84,
+          "passing": 74,
+          "checking": 77,
+          "defense": 63
+        },
+        "goalie": null
       },
       {
         "id": "05r3d",
@@ -3863,29 +3911,6 @@
           "passing": 71,
           "checking": 74,
           "defense": 68
-        },
-        "goalie": null
-      },
-      {
-        "id": "04osu",
-        "name": "Barrett Hayton",
-        "nhlTeam": "UTA",
-        "teamCode": "TOA",
-        "positions": [
-          "C"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 26,
-        "score": 52.71,
-        "overall": 72,
-        "skater": {
-          "skating": 76,
-          "shooting": 71,
-          "passing": 82,
-          "checking": 73,
-          "defense": 73
         },
         "goalie": null
       },
@@ -3914,26 +3939,48 @@
         "goalie": null
       },
       {
-        "id": "04zj5",
-        "name": "JJ Peterka",
-        "nhlTeam": "BOS",
+        "id": "05gdo",
+        "name": "Luke Evangelista",
+        "nhlTeam": "NSH",
         "teamCode": "TOA",
         "positions": [
-          "LW",
           "RW"
         ],
-        "primaryPosition": "LW",
+        "primaryPosition": "RW",
         "role": "skater",
         "skaterRole": "F",
         "age": 24,
-        "score": 50.81,
-        "overall": 71,
+        "score": 51.8,
+        "overall": 72,
         "skater": {
-          "skating": 76,
-          "shooting": 77,
-          "passing": 71,
-          "checking": 73,
-          "defense": 68
+          "skating": 71,
+          "shooting": 78,
+          "passing": 72,
+          "checking": 75,
+          "defense": 64
+        },
+        "goalie": null
+      },
+      {
+        "id": "05g42",
+        "name": "Jack Quinn",
+        "nhlTeam": "BUF",
+        "teamCode": "TOA",
+        "positions": [
+          "RW"
+        ],
+        "primaryPosition": "RW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 24,
+        "score": 51.19,
+        "overall": 72,
+        "skater": {
+          "skating": 73,
+          "shooting": 80,
+          "passing": 75,
+          "checking": 69,
+          "defense": 62
         },
         "goalie": null
       },
@@ -3962,29 +4009,6 @@
         "goalie": null
       },
       {
-        "id": "059e1",
-        "name": "Braden Schneider",
-        "nhlTeam": "NYR",
-        "teamCode": "TOA",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 24,
-        "score": 48.53,
-        "overall": 70,
-        "skater": {
-          "skating": 70,
-          "shooting": 62,
-          "passing": 71,
-          "checking": 72,
-          "defense": 79
-        },
-        "goalie": null
-      },
-      {
         "id": "04ymn",
         "name": "Luke Hughes",
         "nhlTeam": "NJD",
@@ -4004,6 +4028,29 @@
           "passing": 67,
           "checking": 78,
           "defense": 75
+        },
+        "goalie": null
+      },
+      {
+        "id": "04y80",
+        "name": "Shane Wright",
+        "nhlTeam": "SEA",
+        "teamCode": "TOA",
+        "positions": [
+          "C"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 22,
+        "score": 48,
+        "overall": 70,
+        "skater": {
+          "skating": 67,
+          "shooting": 66,
+          "passing": 77,
+          "checking": 73,
+          "defense": 71
         },
         "goalie": null
       },
@@ -4089,91 +4136,19 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 24,
-        "score": 43.35,
-        "overall": 68,
+        "score": 42.93,
+        "overall": 67,
         "skater": null,
         "goalie": {
-          "reflexes": 69,
-          "positioning": 71,
-          "reboundControl": 67
+          "reflexes": 68,
+          "positioning": 70,
+          "reboundControl": 66
         }
       },
       {
-        "id": "04lc6",
-        "name": "Ty Dellandrea",
-        "nhlTeam": "SJS",
-        "teamCode": "TOA",
-        "positions": [
-          "C",
-          "RW"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 26,
-        "score": 42.21,
-        "overall": 67,
-        "skater": {
-          "skating": 66,
-          "shooting": 68,
-          "passing": 74,
-          "checking": 65,
-          "defense": 68
-        },
-        "goalie": null
-      },
-      {
-        "id": "0644e",
-        "name": "Oliver Moore",
-        "nhlTeam": "CHI",
-        "teamCode": "TOA",
-        "positions": [
-          "C",
-          "LW"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 21,
-        "score": 41.05,
-        "overall": 66,
-        "skater": {
-          "skating": 64,
-          "shooting": 67,
-          "passing": 69,
-          "checking": 64,
-          "defense": 65
-        },
-        "goalie": null
-      },
-      {
-        "id": "058vh",
-        "name": "Zachary L'Heureux",
-        "nhlTeam": "COL",
-        "teamCode": "TOA",
-        "positions": [
-          "LW",
-          "RW"
-        ],
-        "primaryPosition": "LW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 23,
-        "score": 39.22,
-        "overall": 65,
-        "skater": {
-          "skating": 67,
-          "shooting": 73,
-          "passing": 63,
-          "checking": 66,
-          "defense": 62
-        },
-        "goalie": null
-      },
-      {
-        "id": "05ubx",
-        "name": "Ryker Evans",
-        "nhlTeam": "SEA",
+        "id": "04zp7",
+        "name": "Albert Johansson",
+        "nhlTeam": "DET",
         "teamCode": "TOA",
         "positions": [
           "D"
@@ -4181,15 +4156,38 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 24,
-        "score": 38.55,
-        "overall": 65,
+        "age": 25,
+        "score": 31.16,
+        "overall": 61,
         "skater": {
-          "skating": 68,
-          "shooting": 55,
-          "passing": 63,
-          "checking": 70,
-          "defense": 73
+          "skating": 60,
+          "shooting": 56,
+          "passing": 57,
+          "checking": 63,
+          "defense": 71
+        },
+        "goalie": null
+      },
+      {
+        "id": "03rah",
+        "name": "Noah Juulsen",
+        "nhlTeam": "COL",
+        "teamCode": "TOA",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 29,
+        "score": 29.93,
+        "overall": 60,
+        "skater": {
+          "skating": 58,
+          "shooting": 54,
+          "passing": 57,
+          "checking": 65,
+          "defense": 69
         },
         "goalie": null
       },
@@ -4213,6 +4211,29 @@
           "passing": 65,
           "checking": 62,
           "defense": 65
+        },
+        "goalie": null
+      },
+      {
+        "id": "05ymp",
+        "name": "Kevin Korchinski",
+        "nhlTeam": "CHI",
+        "teamCode": "TOA",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 22,
+        "score": 21.01,
+        "overall": 55,
+        "skater": {
+          "skating": 53,
+          "shooting": 43,
+          "passing": 52,
+          "checking": 63,
+          "defense": 67
         },
         "goalie": null
       },
@@ -4274,7 +4295,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 22,
+        "age": 23,
         "score": 16.46,
         "overall": 52,
         "skater": {
@@ -4357,29 +4378,6 @@
         "goalie": null
       },
       {
-        "id": "05r2l",
-        "name": "Zach Dean",
-        "nhlTeam": "STL",
-        "teamCode": "TOA",
-        "positions": [
-          "C"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 23,
-        "score": 0,
-        "overall": 40,
-        "skater": {
-          "skating": 39,
-          "shooting": 41,
-          "passing": 46,
-          "checking": 38,
-          "defense": 38
-        },
-        "goalie": null
-      },
-      {
         "id": "05ui5",
         "name": "Quentin Musty",
         "nhlTeam": "SJS",
@@ -4422,29 +4420,6 @@
           "passing": 38,
           "checking": 39,
           "defense": 32
-        },
-        "goalie": null
-      },
-      {
-        "id": "06axx",
-        "name": "William Horcoff",
-        "nhlTeam": "PIT",
-        "teamCode": "TOA",
-        "positions": [
-          "C"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 19,
-        "score": 0,
-        "overall": 40,
-        "skater": {
-          "skating": 38,
-          "shooting": 42,
-          "passing": 50,
-          "checking": 43,
-          "defense": 37
         },
         "goalie": null
       },
@@ -4547,7 +4522,7 @@
         "primaryPosition": "RW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 19,
+        "age": 20,
         "score": 0,
         "overall": 40,
         "skater": {
@@ -4558,27 +4533,6 @@
           "defense": 34
         },
         "goalie": null
-      },
-      {
-        "id": "06hk8",
-        "name": "Carter George",
-        "nhlTeam": "LAK",
-        "teamCode": "TOA",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 20,
-        "score": 0,
-        "overall": 40,
-        "skater": null,
-        "goalie": {
-          "reflexes": 38,
-          "positioning": 41,
-          "reboundControl": 36
-        }
       },
       {
         "id": "06hri",
@@ -4623,29 +4577,6 @@
           "passing": 39,
           "checking": 38,
           "defense": 37
-        },
-        "goalie": null
-      },
-      {
-        "id": "06mb6",
-        "name": "EJ Emery",
-        "nhlTeam": "NYR",
-        "teamCode": "TOA",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 20,
-        "score": 0,
-        "overall": 40,
-        "skater": {
-          "skating": 39,
-          "shooting": 32,
-          "passing": 40,
-          "checking": 43,
-          "defense": 49
         },
         "goalie": null
       },
@@ -4736,6 +4667,29 @@
           "passing": 42,
           "checking": 49,
           "defense": 47
+        },
+        "goalie": null
+      },
+      {
+        "id": "06xvx",
+        "name": "Tinus Luc Koblar",
+        "nhlTeam": "TOR",
+        "teamCode": "TOA",
+        "positions": [
+          "C"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 19,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 41,
+          "shooting": 39,
+          "passing": 48,
+          "checking": 37,
+          "defense": 44
         },
         "goalie": null
       },
@@ -4912,7 +4866,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 69.51,
+        "score": 69.42,
         "overall": 81,
         "skater": null,
         "goalie": {
@@ -4956,7 +4910,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 27,
-        "score": 68.25,
+        "score": 68.04,
         "overall": 80,
         "skater": null,
         "goalie": {
@@ -5187,7 +5141,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 21,
-        "score": 61.41,
+        "score": 61.19,
         "overall": 77,
         "skater": null,
         "goalie": {
@@ -5208,13 +5162,13 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 27,
-        "score": 56.64,
-        "overall": 75,
+        "score": 56.41,
+        "overall": 74,
         "skater": null,
         "goalie": {
-          "reflexes": 76,
-          "positioning": 75,
-          "reboundControl": 75
+          "reflexes": 75,
+          "positioning": 74,
+          "reboundControl": 74
         }
       },
       {
@@ -5237,30 +5191,6 @@
           "passing": 72,
           "checking": 81,
           "defense": 80
-        },
-        "goalie": null
-      },
-      {
-        "id": "04amd",
-        "name": "Peyton Krebs",
-        "nhlTeam": "BUF",
-        "teamCode": "PP",
-        "positions": [
-          "C",
-          "RW"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 25,
-        "score": 56.3,
-        "overall": 74,
-        "skater": {
-          "skating": 74,
-          "shooting": 75,
-          "passing": 80,
-          "checking": 70,
-          "defense": 73
         },
         "goalie": null
       },
@@ -5322,7 +5252,7 @@
         "primaryPosition": "RW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 22,
+        "age": 23,
         "score": 48.8,
         "overall": 70,
         "skater": {
@@ -5417,7 +5347,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 45.82,
+        "score": 45.39,
         "overall": 69,
         "skater": null,
         "goalie": {
@@ -5425,6 +5355,30 @@
           "positioning": 68,
           "reboundControl": 65
         }
+      },
+      {
+        "id": "05uao",
+        "name": "Collin Graf",
+        "nhlTeam": "SJS",
+        "teamCode": "PP",
+        "positions": [
+          "LW",
+          "RW"
+        ],
+        "primaryPosition": "LW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 23,
+        "score": 45.07,
+        "overall": 68,
+        "skater": {
+          "skating": 67,
+          "shooting": 76,
+          "passing": 70,
+          "checking": 66,
+          "defense": 62
+        },
+        "goalie": null
       },
       {
         "id": "04xef",
@@ -5508,13 +5462,13 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 27,
-        "score": 41.68,
-        "overall": 67,
+        "score": 41.23,
+        "overall": 66,
         "skater": null,
         "goalie": {
-          "reflexes": 69,
-          "positioning": 64,
-          "reboundControl": 63
+          "reflexes": 68,
+          "positioning": 63,
+          "reboundControl": 62
         }
       },
       {
@@ -5778,7 +5732,7 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 22,
+        "age": 23,
         "score": 0,
         "overall": 40,
         "skater": null,
@@ -5959,34 +5913,13 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 28,
-        "score": 81.96,
+        "score": 81.89,
         "overall": 87,
         "skater": null,
         "goalie": {
           "reflexes": 87,
           "positioning": 92,
           "reboundControl": 83
-        }
-      },
-      {
-        "id": "01ud1",
-        "name": "Sergei Bobrovsky",
-        "nhlTeam": "TOR",
-        "teamCode": "Jets",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 37,
-        "score": 78.71,
-        "overall": 86,
-        "skater": null,
-        "goalie": {
-          "reflexes": 86,
-          "positioning": 89,
-          "reboundControl": 84
         }
       },
       {
@@ -6001,7 +5934,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 24,
-        "score": 74.91,
+        "score": 74.88,
         "overall": 84,
         "skater": null,
         "goalie": {
@@ -6021,7 +5954,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 27,
+        "age": 28,
         "score": 73.23,
         "overall": 83,
         "skater": {
@@ -6068,7 +6001,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 23,
-        "score": 70.57,
+        "score": 70.36,
         "overall": 82,
         "skater": null,
         "goalie": {
@@ -6171,29 +6104,6 @@
         "goalie": null
       },
       {
-        "id": "03e1m",
-        "name": "Brayden Point",
-        "nhlTeam": "TBL",
-        "teamCode": "Jets",
-        "positions": [
-          "C"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 30,
-        "score": 64.26,
-        "overall": 78,
-        "skater": {
-          "skating": 80,
-          "shooting": 75,
-          "passing": 84,
-          "checking": 75,
-          "defense": 76
-        },
-        "goalie": null
-      },
-      {
         "id": "04zo0",
         "name": "Pavel Dorofeyev",
         "nhlTeam": "NYR",
@@ -6218,49 +6128,50 @@
         "goalie": null
       },
       {
-        "id": "042vl",
-        "name": "Jordan Kyrou",
-        "nhlTeam": "WSH",
+        "id": "03yh8",
+        "name": "Owen Tippett",
+        "nhlTeam": "PHI",
         "teamCode": "Jets",
         "positions": [
+          "LW",
           "RW"
         ],
-        "primaryPosition": "RW",
+        "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 28,
-        "score": 55.94,
-        "overall": 74,
+        "age": 27,
+        "score": 62.97,
+        "overall": 78,
         "skater": {
-          "skating": 73,
-          "shooting": 84,
+          "skating": 84,
+          "shooting": 82,
           "passing": 75,
-          "checking": 76,
-          "defense": 65
+          "checking": 77,
+          "defense": 69
         },
         "goalie": null
       },
       {
-        "id": "05gtp",
-        "name": "Dawson Mercer",
-        "nhlTeam": "NJD",
+        "id": "01xfq",
+        "name": "Vladimir Tarasenko",
+        "nhlTeam": "(N/A)",
         "teamCode": "Jets",
         "positions": [
-          "C",
+          "LW",
           "RW"
         ],
-        "primaryPosition": "C",
+        "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 24,
-        "score": 54.31,
+        "age": 34,
+        "score": 53.56,
         "overall": 73,
         "skater": {
-          "skating": 71,
-          "shooting": 72,
-          "passing": 77,
+          "skating": 77,
+          "shooting": 77,
+          "passing": 73,
           "checking": 74,
-          "defense": 77
+          "defense": 68
         },
         "goalie": null
       },
@@ -6322,7 +6233,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 34,
+        "age": 35,
         "score": 53.01,
         "overall": 73,
         "skater": {
@@ -6382,6 +6293,29 @@
         "goalie": null
       },
       {
+        "id": "06axy",
+        "name": "Artyom Levshunov",
+        "nhlTeam": "CHI",
+        "teamCode": "Jets",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 20,
+        "score": 49.41,
+        "overall": 71,
+        "skater": {
+          "skating": 66,
+          "shooting": 63,
+          "passing": 74,
+          "checking": 80,
+          "defense": 76
+        },
+        "goalie": null
+      },
+      {
         "id": "003tz",
         "name": "Brent Burns",
         "nhlTeam": "COL",
@@ -6417,7 +6351,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 23,
+        "age": 24,
         "score": 45.8,
         "overall": 69,
         "skater": {
@@ -6524,49 +6458,26 @@
         "goalie": null
       },
       {
-        "id": "02npd",
-        "name": "Teddy Blueger",
-        "nhlTeam": "TOR",
+        "id": "058vh",
+        "name": "Zachary L'Heureux",
+        "nhlTeam": "COL",
         "teamCode": "Jets",
         "positions": [
-          "C",
-          "LW"
+          "LW",
+          "RW"
         ],
-        "primaryPosition": "C",
+        "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 31,
-        "score": 41.91,
-        "overall": 67,
+        "age": 23,
+        "score": 39.22,
+        "overall": 65,
         "skater": {
-          "skating": 70,
-          "shooting": 68,
-          "passing": 74,
-          "checking": 67,
-          "defense": 70
-        },
-        "goalie": null
-      },
-      {
-        "id": "060hp",
-        "name": "Lian Bichsel",
-        "nhlTeam": "DAL",
-        "teamCode": "Jets",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 22,
-        "score": 40.49,
-        "overall": 66,
-        "skater": {
-          "skating": 62,
-          "shooting": 58,
-          "passing": 69,
-          "checking": 75,
-          "defense": 77
+          "skating": 67,
+          "shooting": 73,
+          "passing": 63,
+          "checking": 66,
+          "defense": 62
         },
         "goalie": null
       },
@@ -6709,29 +6620,6 @@
         "goalie": null
       },
       {
-        "id": "060pq",
-        "name": "Alex Bump",
-        "nhlTeam": "PHI",
-        "teamCode": "Jets",
-        "positions": [
-          "LW"
-        ],
-        "primaryPosition": "LW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 22,
-        "score": 29.57,
-        "overall": 60,
-        "skater": {
-          "skating": 59,
-          "shooting": 68,
-          "passing": 64,
-          "checking": 64,
-          "defense": 57
-        },
-        "goalie": null
-      },
-      {
         "id": "05ws4",
         "name": "Otto Stenberg",
         "nhlTeam": "STL",
@@ -6842,6 +6730,29 @@
           "passing": 38,
           "checking": 45,
           "defense": 32
+        },
+        "goalie": null
+      },
+      {
+        "id": "06axs",
+        "name": "Tanner Molendyk",
+        "nhlTeam": "NSH",
+        "teamCode": "Jets",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 21,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 42,
+          "shooting": 35,
+          "passing": 41,
+          "checking": 46,
+          "defense": 48
         },
         "goalie": null
       },
@@ -6983,6 +6894,50 @@
         }
       },
       {
+        "id": "06qqe",
+        "name": "Semyon Frolov",
+        "nhlTeam": "CAR",
+        "teamCode": "Jets",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 19,
+        "score": 0,
+        "overall": 40,
+        "skater": null,
+        "goalie": {
+          "reflexes": 38,
+          "positioning": 38,
+          "reboundControl": 41
+        }
+      },
+      {
+        "id": "06sqn",
+        "name": "Nathan Behm",
+        "nhlTeam": "CHI",
+        "teamCode": "Jets",
+        "positions": [
+          "RW"
+        ],
+        "primaryPosition": "RW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 19,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 41,
+          "shooting": 51,
+          "passing": 42,
+          "checking": 39,
+          "defense": 36
+        },
+        "goalie": null
+      },
+      {
         "id": "070gy",
         "name": "Michal Orsulak",
         "nhlTeam": "DET",
@@ -7073,48 +7028,25 @@
         "goalie": null
       },
       {
-        "id": "075k8",
-        "name": "Wiggo Sorensson",
-        "nhlTeam": "CAR",
+        "id": "0760u",
+        "name": "Juho Piiparinen",
+        "nhlTeam": "VGK",
         "teamCode": "Jets",
         "positions": [
-          "C"
+          "D"
         ],
-        "primaryPosition": "C",
+        "primaryPosition": "D",
         "role": "skater",
-        "skaterRole": "F",
+        "skaterRole": "D",
         "age": 18,
         "score": 0,
         "overall": 40,
         "skater": {
-          "skating": 39,
-          "shooting": 43,
-          "passing": 46,
-          "checking": 38,
-          "defense": 41
-        },
-        "goalie": null
-      },
-      {
-        "id": "076kr",
-        "name": "Jonas Lagerberg Hoen",
-        "nhlTeam": "OTT",
-        "teamCode": "Jets",
-        "positions": [
-          "RW"
-        ],
-        "primaryPosition": "RW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 18,
-        "score": 0,
-        "overall": 40,
-        "skater": {
-          "skating": 44,
-          "shooting": 49,
-          "passing": 36,
-          "checking": 39,
-          "defense": 38
+          "skating": 43,
+          "shooting": 35,
+          "passing": 39,
+          "checking": 44,
+          "defense": 49
         },
         "goalie": null
       }
@@ -7225,7 +7157,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 29,
+        "age": 30,
         "score": 82.7,
         "overall": 88,
         "skater": {
@@ -7319,8 +7251,8 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 25,
-        "score": 80.09,
+        "age": 26,
+        "score": 80.05,
         "overall": 86,
         "skater": null,
         "goalie": {
@@ -7434,8 +7366,8 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 28,
-        "score": 72.5,
+        "age": 29,
+        "score": 72.44,
         "overall": 83,
         "skater": null,
         "goalie": {
@@ -7443,6 +7375,30 @@
           "positioning": 83,
           "reboundControl": 82
         }
+      },
+      {
+        "id": "03as8",
+        "name": "Nikolaj Ehlers",
+        "nhlTeam": "CAR",
+        "teamCode": "QUE",
+        "positions": [
+          "LW",
+          "RW"
+        ],
+        "primaryPosition": "LW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 30,
+        "score": 66.86,
+        "overall": 80,
+        "skater": {
+          "skating": 81,
+          "shooting": 84,
+          "passing": 81,
+          "checking": 84,
+          "defense": 75
+        },
+        "goalie": null
       },
       {
         "id": "0042t",
@@ -7527,7 +7483,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 27,
-        "score": 57.02,
+        "score": 56.92,
         "overall": 75,
         "skater": null,
         "goalie": {
@@ -7548,7 +7504,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 27,
-        "score": 50.32,
+        "score": 50.14,
         "overall": 71,
         "skater": null,
         "goalie": {
@@ -7604,6 +7560,30 @@
         "goalie": null
       },
       {
+        "id": "05rjg",
+        "name": "Danila Yurov",
+        "nhlTeam": "MIN",
+        "teamCode": "QUE",
+        "positions": [
+          "C",
+          "LW"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 22,
+        "score": 47.46,
+        "overall": 70,
+        "skater": {
+          "skating": 73,
+          "shooting": 68,
+          "passing": 73,
+          "checking": 71,
+          "defense": 70
+        },
+        "goalie": null
+      },
+      {
         "id": "05oxl",
         "name": "Leevi Merilainen",
         "nhlTeam": "OTT",
@@ -7614,8 +7594,8 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 23,
-        "score": 42.54,
+        "age": 24,
+        "score": 42.12,
         "overall": 67,
         "skater": null,
         "goalie": {
@@ -7623,6 +7603,29 @@
           "positioning": 68,
           "reboundControl": 66
         }
+      },
+      {
+        "id": "05kuc",
+        "name": "Tyler Kleven",
+        "nhlTeam": "OTT",
+        "teamCode": "QUE",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 24,
+        "score": 40.94,
+        "overall": 66,
+        "skater": {
+          "skating": 68,
+          "shooting": 61,
+          "passing": 66,
+          "checking": 69,
+          "defense": 70
+        },
+        "goalie": null
       },
       {
         "id": "05tqu",
@@ -7717,26 +7720,25 @@
         "goalie": null
       },
       {
-        "id": "06bao",
-        "name": "Denver Barkey",
-        "nhlTeam": "PHI",
+        "id": "06aw5",
+        "name": "Uvis Balinskis",
+        "nhlTeam": "FLA",
         "teamCode": "QUE",
         "positions": [
-          "C",
-          "LW"
+          "D"
         ],
-        "primaryPosition": "C",
+        "primaryPosition": "D",
         "role": "skater",
-        "skaterRole": "F",
-        "age": 21,
-        "score": 36.01,
-        "overall": 64,
+        "skaterRole": "D",
+        "age": 30,
+        "score": 32.82,
+        "overall": 62,
         "skater": {
           "skating": 64,
-          "shooting": 63,
-          "passing": 69,
-          "checking": 66,
-          "defense": 64
+          "shooting": 56,
+          "passing": 63,
+          "checking": 68,
+          "defense": 69
         },
         "goalie": null
       },
@@ -7951,29 +7953,6 @@
         "goalie": null
       },
       {
-        "id": "06sqf",
-        "name": "Braeden Cootes",
-        "nhlTeam": "VAN",
-        "teamCode": "QUE",
-        "positions": [
-          "C"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 19,
-        "score": 16.72,
-        "overall": 52,
-        "skater": {
-          "skating": 50,
-          "shooting": 54,
-          "passing": 57,
-          "checking": 51,
-          "defense": 52
-        },
-        "goalie": null
-      },
-      {
         "id": "059e7",
         "name": "Fabian Lysell",
         "nhlTeam": "COL",
@@ -7993,29 +7972,6 @@
           "passing": 38,
           "checking": 44,
           "defense": 36
-        },
-        "goalie": null
-      },
-      {
-        "id": "062dy",
-        "name": "Andrew Cristall",
-        "nhlTeam": "WSH",
-        "teamCode": "QUE",
-        "positions": [
-          "LW"
-        ],
-        "primaryPosition": "LW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 21,
-        "score": 0,
-        "overall": 40,
-        "skater": {
-          "skating": 43,
-          "shooting": 48,
-          "passing": 38,
-          "checking": 38,
-          "defense": 35
         },
         "goalie": null
       },
@@ -8281,7 +8237,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 26,
+        "age": 27,
         "score": 95.62,
         "overall": 94,
         "skater": {
@@ -8305,13 +8261,13 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 30,
-        "score": 82.4,
-        "overall": 88,
+        "score": 82.37,
+        "overall": 87,
         "skater": null,
         "goalie": {
-          "reflexes": 87,
-          "positioning": 87,
-          "reboundControl": 83
+          "reflexes": 86,
+          "positioning": 86,
+          "reboundControl": 82
         }
       },
       {
@@ -8349,7 +8305,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 27,
-        "score": 76.41,
+        "score": 76.32,
         "overall": 85,
         "skater": null,
         "goalie": {
@@ -8676,7 +8632,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 26,
-        "score": 53.51,
+        "score": 53.28,
         "overall": 73,
         "skater": null,
         "goalie": {
@@ -8895,27 +8851,6 @@
         "goalie": null
       },
       {
-        "id": "05u3g",
-        "name": "Thomas Milic",
-        "nhlTeam": "WPG",
-        "teamCode": "SJF",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 23,
-        "score": 39.23,
-        "overall": 65,
-        "skater": null,
-        "goalie": {
-          "reflexes": 64,
-          "positioning": 69,
-          "reboundControl": 61
-        }
-      },
-      {
         "id": "04f1m",
         "name": "Cale Fleury",
         "nhlTeam": "SEA",
@@ -8935,6 +8870,51 @@
           "passing": 62,
           "checking": 67,
           "defense": 71
+        },
+        "goalie": null
+      },
+      {
+        "id": "05u3g",
+        "name": "Thomas Milic",
+        "nhlTeam": "WPG",
+        "teamCode": "SJF",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 23,
+        "score": 39,
+        "overall": 65,
+        "skater": null,
+        "goalie": {
+          "reflexes": 64,
+          "positioning": 69,
+          "reboundControl": 61
+        }
+      },
+      {
+        "id": "04l8y",
+        "name": "Mark Kastelic",
+        "nhlTeam": "BOS",
+        "teamCode": "SJF",
+        "positions": [
+          "C",
+          "RW"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 27,
+        "score": 38.46,
+        "overall": 65,
+        "skater": {
+          "skating": 65,
+          "shooting": 67,
+          "passing": 73,
+          "checking": 66,
+          "defense": 67
         },
         "goalie": null
       },
@@ -9087,7 +9067,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 21,
+        "age": 22,
         "score": 28.16,
         "overall": 59,
         "skater": {
@@ -9409,14 +9389,35 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 33,
-        "score": 81.71,
+        "age": 34,
+        "score": 81.64,
         "overall": 87,
         "skater": null,
         "goalie": {
           "reflexes": 89,
           "positioning": 89,
           "reboundControl": 87
+        }
+      },
+      {
+        "id": "01ud1",
+        "name": "Sergei Bobrovsky",
+        "nhlTeam": "TOR",
+        "teamCode": "HC",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 37,
+        "score": 78.66,
+        "overall": 86,
+        "skater": null,
+        "goalie": {
+          "reflexes": 86,
+          "positioning": 89,
+          "reboundControl": 84
         }
       },
       {
@@ -9438,6 +9439,29 @@
           "shooting": 87,
           "passing": 89,
           "checking": 86,
+          "defense": 85
+        },
+        "goalie": null
+      },
+      {
+        "id": "039cg",
+        "name": "Sam Bennett",
+        "nhlTeam": "FLA",
+        "teamCode": "HC",
+        "positions": [
+          "C"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 30,
+        "score": 76.53,
+        "overall": 85,
+        "skater": {
+          "skating": 85,
+          "shooting": 88,
+          "passing": 90,
+          "checking": 83,
           "defense": 85
         },
         "goalie": null
@@ -9537,29 +9561,6 @@
         "goalie": null
       },
       {
-        "id": "038vb",
-        "name": "Travis Konecny",
-        "nhlTeam": "PHI",
-        "teamCode": "HC",
-        "positions": [
-          "RW"
-        ],
-        "primaryPosition": "RW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 29,
-        "score": 70.03,
-        "overall": 81,
-        "skater": {
-          "skating": 83,
-          "shooting": 84,
-          "passing": 77,
-          "checking": 82,
-          "defense": 73
-        },
-        "goalie": null
-      },
-      {
         "id": "03nqi",
         "name": "Alex Lyon",
         "nhlTeam": "BUF",
@@ -9571,7 +9572,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 33,
-        "score": 67.87,
+        "score": 67.66,
         "overall": 80,
         "skater": null,
         "goalie": {
@@ -9615,7 +9616,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 26,
-        "score": 66.71,
+        "score": 66.61,
         "overall": 80,
         "skater": null,
         "goalie": {
@@ -9682,7 +9683,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 39,
+        "age": 40,
         "score": 63.35,
         "overall": 78,
         "skater": {
@@ -9752,7 +9753,7 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 34,
+        "age": 35,
         "score": 60.26,
         "overall": 76,
         "skater": null,
@@ -9782,6 +9783,30 @@
           "passing": 78,
           "checking": 79,
           "defense": 88
+        },
+        "goalie": null
+      },
+      {
+        "id": "05yn2",
+        "name": "Fraser Minten",
+        "nhlTeam": "BOS",
+        "teamCode": "HC",
+        "positions": [
+          "C",
+          "LW"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 22,
+        "score": 57.03,
+        "overall": 75,
+        "skater": {
+          "skating": 73,
+          "shooting": 74,
+          "passing": 86,
+          "checking": 73,
+          "defense": 79
         },
         "goalie": null
       },
@@ -9868,7 +9893,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 51.77,
+        "score": 51.59,
         "overall": 72,
         "skater": null,
         "goalie": {
@@ -9920,6 +9945,29 @@
           "passing": 71,
           "checking": 81,
           "defense": 82
+        },
+        "goalie": null
+      },
+      {
+        "id": "02ybk",
+        "name": "Artturi Lehkonen",
+        "nhlTeam": "COL",
+        "teamCode": "HC",
+        "positions": [
+          "LW"
+        ],
+        "primaryPosition": "LW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 31,
+        "score": 50.46,
+        "overall": 71,
+        "skater": {
+          "skating": 70,
+          "shooting": 78,
+          "passing": 67,
+          "checking": 71,
+          "defense": 64
         },
         "goalie": null
       },
@@ -9990,53 +10038,6 @@
           "passing": 77,
           "checking": 64,
           "defense": 67
-        },
-        "goalie": null
-      },
-      {
-        "id": "05uao",
-        "name": "Collin Graf",
-        "nhlTeam": "SJS",
-        "teamCode": "HC",
-        "positions": [
-          "LW",
-          "RW"
-        ],
-        "primaryPosition": "LW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 23,
-        "score": 45.07,
-        "overall": 68,
-        "skater": {
-          "skating": 67,
-          "shooting": 76,
-          "passing": 70,
-          "checking": 66,
-          "defense": 62
-        },
-        "goalie": null
-      },
-      {
-        "id": "042vk",
-        "name": "Andrew Peeke",
-        "nhlTeam": "UTA",
-        "teamCode": "HC",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 28,
-        "score": 43.43,
-        "overall": 68,
-        "skater": {
-          "skating": 70,
-          "shooting": 59,
-          "passing": 70,
-          "checking": 74,
-          "defense": 73
         },
         "goalie": null
       },
@@ -10341,29 +10342,6 @@
         "goalie": null
       },
       {
-        "id": "06axs",
-        "name": "Tanner Molendyk",
-        "nhlTeam": "NSH",
-        "teamCode": "HC",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 21,
-        "score": 0,
-        "overall": 40,
-        "skater": {
-          "skating": 42,
-          "shooting": 35,
-          "passing": 41,
-          "checking": 46,
-          "defense": 48
-        },
-        "goalie": null
-      },
-      {
         "id": "06bag",
         "name": "Carson Rehkopf",
         "nhlTeam": "SEA",
@@ -10601,7 +10579,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 38,
+        "age": 39,
         "score": 84.51,
         "overall": 89,
         "skater": {
@@ -10669,7 +10647,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 30,
-        "score": 77.11,
+        "score": 77.04,
         "overall": 85,
         "skater": null,
         "goalie": {
@@ -10735,8 +10713,8 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 32,
-        "score": 72.8,
+        "age": 33,
+        "score": 72.72,
         "overall": 83,
         "skater": null,
         "goalie": {
@@ -10804,7 +10782,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 36,
-        "score": 67.99,
+        "score": 67.9,
         "overall": 80,
         "skater": null,
         "goalie": {
@@ -10825,7 +10803,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 67.81,
+        "score": 67.72,
         "overall": 80,
         "skater": null,
         "goalie": {
@@ -10952,6 +10930,27 @@
         "goalie": null
       },
       {
+        "id": "05ws3",
+        "name": "Niklas Kokko",
+        "nhlTeam": "SEA",
+        "teamCode": "CGS",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 22,
+        "score": 50.99,
+        "overall": 72,
+        "skater": null,
+        "goalie": {
+          "reflexes": 74,
+          "positioning": 70,
+          "reboundControl": 72
+        }
+      },
+      {
         "id": "04ldb",
         "name": "Bowen Byram",
         "nhlTeam": "CHI",
@@ -10973,27 +10972,6 @@
           "defense": 78
         },
         "goalie": null
-      },
-      {
-        "id": "05ws3",
-        "name": "Niklas Kokko",
-        "nhlTeam": "SEA",
-        "teamCode": "CGS",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 22,
-        "score": 50.69,
-        "overall": 71,
-        "skater": null,
-        "goalie": {
-          "reflexes": 73,
-          "positioning": 69,
-          "reboundControl": 71
-        }
       },
       {
         "id": "051xf",
@@ -11193,7 +11171,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 29,
+        "age": 30,
         "score": 33.29,
         "overall": 62,
         "skater": {
@@ -11701,7 +11679,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 80.27,
+        "score": 80.24,
         "overall": 86,
         "skater": null,
         "goalie": {
@@ -11721,7 +11699,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 31,
+        "age": 32,
         "score": 80.23,
         "overall": 86,
         "skater": {
@@ -11744,8 +11722,8 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 27,
-        "score": 76.96,
+        "age": 28,
+        "score": 76.89,
         "overall": 85,
         "skater": null,
         "goalie": {
@@ -11753,29 +11731,6 @@
           "positioning": 84,
           "reboundControl": 82
         }
-      },
-      {
-        "id": "039cg",
-        "name": "Sam Bennett",
-        "nhlTeam": "FLA",
-        "teamCode": "Yotes",
-        "positions": [
-          "C"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 30,
-        "score": 76.53,
-        "overall": 85,
-        "skater": {
-          "skating": 85,
-          "shooting": 88,
-          "passing": 90,
-          "checking": 83,
-          "defense": 85
-        },
-        "goalie": null
       },
       {
         "id": "03e1n",
@@ -11847,49 +11802,72 @@
         "goalie": null
       },
       {
-        "id": "01zvp",
-        "name": "Bryan Rust",
-        "nhlTeam": "PIT",
+        "id": "03e1m",
+        "name": "Brayden Point",
+        "nhlTeam": "TBL",
         "teamCode": "Yotes",
         "positions": [
-          "RW"
+          "C"
         ],
-        "primaryPosition": "RW",
+        "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 34,
-        "score": 67.9,
-        "overall": 80,
+        "age": 30,
+        "score": 64.26,
+        "overall": 78,
         "skater": {
-          "skating": 86,
-          "shooting": 89,
-          "passing": 76,
-          "checking": 80,
-          "defense": 74
+          "skating": 80,
+          "shooting": 75,
+          "passing": 84,
+          "checking": 75,
+          "defense": 76
         },
         "goalie": null
       },
       {
-        "id": "03yh8",
-        "name": "Owen Tippett",
-        "nhlTeam": "PHI",
+        "id": "05ltj",
+        "name": "Brock Faber",
+        "nhlTeam": "MIN",
         "teamCode": "Yotes",
         "positions": [
-          "LW",
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 24,
+        "score": 61.32,
+        "overall": 77,
+        "skater": {
+          "skating": 79,
+          "shooting": 68,
+          "passing": 77,
+          "checking": 83,
+          "defense": 89
+        },
+        "goalie": null
+      },
+      {
+        "id": "01ex7",
+        "name": "Matt Duchene",
+        "nhlTeam": "DAL",
+        "teamCode": "Yotes",
+        "positions": [
+          "C",
           "RW"
         ],
-        "primaryPosition": "LW",
+        "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 27,
-        "score": 62.97,
-        "overall": 78,
+        "age": 35,
+        "score": 59.92,
+        "overall": 76,
         "skater": {
-          "skating": 84,
-          "shooting": 82,
-          "passing": 75,
-          "checking": 77,
-          "defense": 69
+          "skating": 79,
+          "shooting": 75,
+          "passing": 80,
+          "checking": 79,
+          "defense": 80
         },
         "goalie": null
       },
@@ -11927,7 +11905,7 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 24,
+        "age": 25,
         "score": 54.93,
         "overall": 74,
         "skater": {
@@ -11940,25 +11918,48 @@
         "goalie": null
       },
       {
-        "id": "05ran",
-        "name": "Matt Coronato",
+        "id": "06iml",
+        "name": "Maxim Tsyplakov",
         "nhlTeam": "CGY",
         "teamCode": "Yotes",
         "positions": [
-          "RW"
+          "LW"
         ],
-        "primaryPosition": "RW",
+        "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 23,
-        "score": 53.21,
+        "age": 27,
+        "score": 53.1,
         "overall": 73,
         "skater": {
-          "skating": 78,
-          "shooting": 84,
-          "passing": 74,
-          "checking": 77,
-          "defense": 63
+          "skating": 74,
+          "shooting": 79,
+          "passing": 72,
+          "checking": 72,
+          "defense": 65
+        },
+        "goalie": null
+      },
+      {
+        "id": "04osu",
+        "name": "Barrett Hayton",
+        "nhlTeam": "UTA",
+        "teamCode": "Yotes",
+        "positions": [
+          "C"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 26,
+        "score": 52.71,
+        "overall": 72,
+        "skater": {
+          "skating": 76,
+          "shooting": 71,
+          "passing": 82,
+          "checking": 73,
+          "defense": 73
         },
         "goalie": null
       },
@@ -11986,48 +11987,50 @@
         "goalie": null
       },
       {
-        "id": "05g42",
-        "name": "Jack Quinn",
-        "nhlTeam": "BUF",
+        "id": "04zj5",
+        "name": "JJ Peterka",
+        "nhlTeam": "BOS",
         "teamCode": "Yotes",
         "positions": [
+          "LW",
           "RW"
         ],
-        "primaryPosition": "RW",
+        "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
         "age": 24,
-        "score": 51.19,
-        "overall": 72,
+        "score": 50.81,
+        "overall": 71,
         "skater": {
-          "skating": 73,
-          "shooting": 80,
-          "passing": 75,
-          "checking": 69,
-          "defense": 62
+          "skating": 76,
+          "shooting": 77,
+          "passing": 71,
+          "checking": 73,
+          "defense": 68
         },
         "goalie": null
       },
       {
-        "id": "05lu8",
-        "name": "Alexander Nikishin",
-        "nhlTeam": "CAR",
+        "id": "02zpp",
+        "name": "Viktor Arvidsson",
+        "nhlTeam": "DET",
         "teamCode": "Yotes",
         "positions": [
-          "D"
+          "LW",
+          "RW"
         ],
-        "primaryPosition": "D",
+        "primaryPosition": "LW",
         "role": "skater",
-        "skaterRole": "D",
-        "age": 24,
-        "score": 50.96,
-        "overall": 72,
+        "skaterRole": "F",
+        "age": 33,
+        "score": 50.57,
+        "overall": 71,
         "skater": {
-          "skating": 71,
-          "shooting": 61,
-          "passing": 69,
-          "checking": 77,
-          "defense": 81
+          "skating": 75,
+          "shooting": 78,
+          "passing": 71,
+          "checking": 73,
+          "defense": 63
         },
         "goalie": null
       },
@@ -12051,29 +12054,6 @@
           "passing": 70,
           "checking": 79,
           "defense": 76
-        },
-        "goalie": null
-      },
-      {
-        "id": "06age",
-        "name": "Sam Malinski",
-        "nhlTeam": "COL",
-        "teamCode": "Yotes",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 28,
-        "score": 47.3,
-        "overall": 70,
-        "skater": {
-          "skating": 66,
-          "shooting": 59,
-          "passing": 67,
-          "checking": 74,
-          "defense": 80
         },
         "goalie": null
       },
@@ -12148,25 +12128,26 @@
         "goalie": null
       },
       {
-        "id": "060v8",
-        "name": "Elias Pettersson",
-        "nhlTeam": "VAN",
+        "id": "0644e",
+        "name": "Oliver Moore",
+        "nhlTeam": "CHI",
         "teamCode": "Yotes",
         "positions": [
-          "D"
+          "C",
+          "LW"
         ],
-        "primaryPosition": "D",
+        "primaryPosition": "C",
         "role": "skater",
-        "skaterRole": "D",
-        "age": 22,
-        "score": 39.61,
-        "overall": 65,
+        "skaterRole": "F",
+        "age": 21,
+        "score": 41.05,
+        "overall": 66,
         "skater": {
-          "skating": 68,
-          "shooting": 61,
-          "passing": 66,
-          "checking": 70,
-          "defense": 74
+          "skating": 64,
+          "shooting": 67,
+          "passing": 69,
+          "checking": 64,
+          "defense": 65
         },
         "goalie": null
       },
@@ -12191,53 +12172,6 @@
           "passing": 62,
           "checking": 65,
           "defense": 63
-        },
-        "goalie": null
-      },
-      {
-        "id": "04l8y",
-        "name": "Mark Kastelic",
-        "nhlTeam": "BOS",
-        "teamCode": "Yotes",
-        "positions": [
-          "C",
-          "RW"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 27,
-        "score": 38.46,
-        "overall": 65,
-        "skater": {
-          "skating": 65,
-          "shooting": 67,
-          "passing": 73,
-          "checking": 66,
-          "defense": 67
-        },
-        "goalie": null
-      },
-      {
-        "id": "05rj3",
-        "name": "Tristan Luneau",
-        "nhlTeam": "ANA",
-        "teamCode": "Yotes",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 22,
-        "score": 34.01,
-        "overall": 62,
-        "skater": {
-          "skating": 60,
-          "shooting": 50,
-          "passing": 62,
-          "checking": 66,
-          "defense": 69
         },
         "goalie": null
       },
@@ -12289,6 +12223,29 @@
         "goalie": null
       },
       {
+        "id": "05td4",
+        "name": "Ryan Ufko",
+        "nhlTeam": "NSH",
+        "teamCode": "Yotes",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 23,
+        "score": 25.89,
+        "overall": 58,
+        "skater": {
+          "skating": 60,
+          "shooting": 47,
+          "passing": 55,
+          "checking": 66,
+          "defense": 68
+        },
+        "goalie": null
+      },
+      {
         "id": "05ymn",
         "name": "Maveric Lamoureux",
         "nhlTeam": "UTA",
@@ -12335,9 +12292,9 @@
         "goalie": null
       },
       {
-        "id": "06b7c",
-        "name": "Luca Pinelli",
-        "nhlTeam": "CBJ",
+        "id": "06sqf",
+        "name": "Braeden Cootes",
+        "nhlTeam": "VAN",
         "teamCode": "Yotes",
         "positions": [
           "C"
@@ -12345,15 +12302,38 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 21,
-        "score": 15.53,
-        "overall": 51,
+        "age": 19,
+        "score": 16.72,
+        "overall": 52,
         "skater": {
-          "skating": 49,
+          "skating": 50,
           "shooting": 54,
-          "passing": 55,
-          "checking": 49,
-          "defense": 55
+          "passing": 57,
+          "checking": 51,
+          "defense": 52
+        },
+        "goalie": null
+      },
+      {
+        "id": "062dy",
+        "name": "Andrew Cristall",
+        "nhlTeam": "WSH",
+        "teamCode": "Yotes",
+        "positions": [
+          "LW"
+        ],
+        "primaryPosition": "LW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 21,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 43,
+          "shooting": 48,
+          "passing": 38,
+          "checking": 38,
+          "defense": 35
         },
         "goalie": null
       },
@@ -12377,6 +12357,29 @@
           "passing": 51,
           "checking": 38,
           "defense": 43
+        },
+        "goalie": null
+      },
+      {
+        "id": "06axx",
+        "name": "William Horcoff",
+        "nhlTeam": "PIT",
+        "teamCode": "Yotes",
+        "positions": [
+          "C"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 19,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 38,
+          "shooting": 42,
+          "passing": 50,
+          "checking": 43,
+          "defense": 37
         },
         "goalie": null
       },
@@ -12425,27 +12428,6 @@
           "defense": 33
         },
         "goalie": null
-      },
-      {
-        "id": "06ims",
-        "name": "Dmitri Gamzin",
-        "nhlTeam": "NYI",
-        "teamCode": "Yotes",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 23,
-        "score": 0,
-        "overall": 40,
-        "skater": null,
-        "goalie": {
-          "reflexes": 45,
-          "positioning": 40,
-          "reboundControl": 40
-        }
       },
       {
         "id": "06lok",
@@ -12517,25 +12499,25 @@
         "goalie": null
       },
       {
-        "id": "06mhj",
-        "name": "Jack Pridham",
-        "nhlTeam": "TBL",
+        "id": "06mgy",
+        "name": "Tomas Lavoie",
+        "nhlTeam": "UTA",
         "teamCode": "Yotes",
         "positions": [
-          "RW"
+          "D"
         ],
-        "primaryPosition": "RW",
+        "primaryPosition": "D",
         "role": "skater",
-        "skaterRole": "F",
+        "skaterRole": "D",
         "age": 20,
         "score": 0,
         "overall": 40,
         "skater": {
-          "skating": 43,
-          "shooting": 47,
-          "passing": 37,
-          "checking": 39,
-          "defense": 32
+          "skating": 40,
+          "shooting": 35,
+          "passing": 40,
+          "checking": 47,
+          "defense": 52
         },
         "goalie": null
       },
@@ -12596,7 +12578,7 @@
         "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 17,
+        "age": 18,
         "score": 0,
         "overall": 40,
         "skater": {
@@ -12605,6 +12587,29 @@
           "passing": 42,
           "checking": 37,
           "defense": 31
+        },
+        "goalie": null
+      },
+      {
+        "id": "06sqc",
+        "name": "Theo Stockselius",
+        "nhlTeam": "CGY",
+        "teamCode": "Yotes",
+        "positions": [
+          "LW"
+        ],
+        "primaryPosition": "LW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 19,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 46,
+          "shooting": 50,
+          "passing": 36,
+          "checking": 41,
+          "defense": 36
         },
         "goalie": null
       },
@@ -12619,7 +12624,7 @@
         "primaryPosition": "RW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 18,
+        "age": 19,
         "score": 0,
         "overall": 40,
         "skater": {
@@ -12724,6 +12729,29 @@
         "goalie": null
       },
       {
+        "id": "0760v",
+        "name": "William Hakansson",
+        "nhlTeam": "CAR",
+        "teamCode": "Yotes",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 18,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 37,
+          "shooting": 32,
+          "passing": 39,
+          "checking": 45,
+          "defense": 46
+        },
+        "goalie": null
+      },
+      {
         "id": "076cu",
         "name": "Maksim Sokolovskii",
         "nhlTeam": "PHI",
@@ -12807,7 +12835,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 27,
-        "score": 86.96,
+        "score": 86.94,
         "overall": 90,
         "skater": null,
         "goalie": {
@@ -12840,25 +12868,25 @@
         "goalie": null
       },
       {
-        "id": "04dwj",
-        "name": "Jason Robertson",
-        "nhlTeam": "DAL",
+        "id": "03d12",
+        "name": "David Pastrnak",
+        "nhlTeam": "BOS",
         "teamCode": "CBO",
         "positions": [
-          "LW"
+          "RW"
         ],
-        "primaryPosition": "LW",
+        "primaryPosition": "RW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 27,
-        "score": 82.31,
-        "overall": 87,
+        "age": 30,
+        "score": 83.1,
+        "overall": 88,
         "skater": {
-          "skating": 92,
-          "shooting": 96,
-          "passing": 85,
-          "checking": 88,
-          "defense": 78
+          "skating": 88,
+          "shooting": 94,
+          "passing": 92,
+          "checking": 87,
+          "defense": 79
         },
         "goalie": null
       },
@@ -12898,13 +12926,34 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 78.97,
+        "score": 78.95,
         "overall": 86,
         "skater": null,
         "goalie": {
           "reflexes": 85,
           "positioning": 86,
           "reboundControl": 80
+        }
+      },
+      {
+        "id": "03jw0",
+        "name": "Joey Daccord",
+        "nhlTeam": "SEA",
+        "teamCode": "CBO",
+        "positions": [
+          "G"
+        ],
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 30,
+        "score": 78.57,
+        "overall": 86,
+        "skater": null,
+        "goalie": {
+          "reflexes": 87,
+          "positioning": 90,
+          "reboundControl": 86
         }
       },
       {
@@ -12952,27 +13001,6 @@
           "defense": 80
         },
         "goalie": null
-      },
-      {
-        "id": "02h6c",
-        "name": "Anton Forsberg",
-        "nhlTeam": "LAK",
-        "teamCode": "CBO",
-        "positions": [
-          "G"
-        ],
-        "primaryPosition": "G",
-        "role": "goalie",
-        "skaterRole": null,
-        "age": 33,
-        "score": 70.94,
-        "overall": 82,
-        "skater": null,
-        "goalie": {
-          "reflexes": 83,
-          "positioning": 79,
-          "reboundControl": 83
-        }
       },
       {
         "id": "04o0h",
@@ -13044,29 +13072,6 @@
         "goalie": null
       },
       {
-        "id": "03w5s",
-        "name": "Ryan McLeod",
-        "nhlTeam": "BUF",
-        "teamCode": "CBO",
-        "positions": [
-          "C"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 26,
-        "score": 59.72,
-        "overall": 76,
-        "skater": {
-          "skating": 77,
-          "shooting": 80,
-          "passing": 83,
-          "checking": 74,
-          "defense": 79
-        },
-        "goalie": null
-      },
-      {
         "id": "05m17",
         "name": "Frank Nazar",
         "nhlTeam": "CHI",
@@ -13115,33 +13120,30 @@
         "goalie": null
       },
       {
-        "id": "05yn2",
-        "name": "Fraser Minten",
-        "nhlTeam": "BOS",
+        "id": "03bw6",
+        "name": "Pheonix Copley",
+        "nhlTeam": "CBJ",
         "teamCode": "CBO",
         "positions": [
-          "C",
-          "LW"
+          "G"
         ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 22,
-        "score": 57.03,
-        "overall": 75,
-        "skater": {
-          "skating": 73,
-          "shooting": 74,
-          "passing": 86,
-          "checking": 73,
-          "defense": 79
-        },
-        "goalie": null
+        "primaryPosition": "G",
+        "role": "goalie",
+        "skaterRole": null,
+        "age": 34,
+        "score": 51.68,
+        "overall": 72,
+        "skater": null,
+        "goalie": {
+          "reflexes": 73,
+          "positioning": 71,
+          "reboundControl": 73
+        }
       },
       {
-        "id": "04lcs",
-        "name": "Mattias Samuelsson",
-        "nhlTeam": "BUF",
+        "id": "05lu8",
+        "name": "Alexander Nikishin",
+        "nhlTeam": "CAR",
         "teamCode": "CBO",
         "positions": [
           "D"
@@ -13149,15 +13151,15 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 26,
-        "score": 55.46,
-        "overall": 74,
+        "age": 24,
+        "score": 50.96,
+        "overall": 72,
         "skater": {
-          "skating": 76,
-          "shooting": 70,
-          "passing": 72,
-          "checking": 83,
-          "defense": 82
+          "skating": 71,
+          "shooting": 61,
+          "passing": 69,
+          "checking": 77,
+          "defense": 81
         },
         "goalie": null
       },
@@ -13185,47 +13187,25 @@
         "goalie": null
       },
       {
-        "id": "06axy",
-        "name": "Artyom Levshunov",
-        "nhlTeam": "CHI",
+        "id": "02dpz",
+        "name": "Zemgus Girgensons",
+        "nhlTeam": "TBL",
         "teamCode": "CBO",
         "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 20,
-        "score": 49.41,
-        "overall": 71,
-        "skater": {
-          "skating": 66,
-          "shooting": 63,
-          "passing": 74,
-          "checking": 80,
-          "defense": 76
-        },
-        "goalie": null
-      },
-      {
-        "id": "04y80",
-        "name": "Shane Wright",
-        "nhlTeam": "SEA",
-        "teamCode": "CBO",
-        "positions": [
-          "C"
+          "C",
+          "LW"
         ],
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 22,
-        "score": 48,
+        "age": 32,
+        "score": 47.12,
         "overall": 70,
         "skater": {
-          "skating": 67,
+          "skating": 74,
           "shooting": 66,
-          "passing": 77,
-          "checking": 73,
+          "passing": 79,
+          "checking": 71,
           "defense": 71
         },
         "goalie": null
@@ -13265,7 +13245,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 24,
-        "score": 45.64,
+        "score": 45.19,
         "overall": 69,
         "skater": null,
         "goalie": {
@@ -13344,6 +13324,52 @@
         "goalie": null
       },
       {
+        "id": "060hp",
+        "name": "Lian Bichsel",
+        "nhlTeam": "DAL",
+        "teamCode": "CBO",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 22,
+        "score": 40.49,
+        "overall": 66,
+        "skater": {
+          "skating": 62,
+          "shooting": 58,
+          "passing": 69,
+          "checking": 75,
+          "defense": 77
+        },
+        "goalie": null
+      },
+      {
+        "id": "05rj3",
+        "name": "Tristan Luneau",
+        "nhlTeam": "ANA",
+        "teamCode": "CBO",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 22,
+        "score": 34.01,
+        "overall": 62,
+        "skater": {
+          "skating": 60,
+          "shooting": 50,
+          "passing": 62,
+          "checking": 66,
+          "defense": 69
+        },
+        "goalie": null
+      },
+      {
         "id": "05x9g",
         "name": "Arber Xhekaj",
         "nhlTeam": "MTL",
@@ -13363,29 +13389,6 @@
           "passing": 64,
           "checking": 68,
           "defense": 72
-        },
-        "goalie": null
-      },
-      {
-        "id": "05td4",
-        "name": "Ryan Ufko",
-        "nhlTeam": "NSH",
-        "teamCode": "CBO",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 23,
-        "score": 25.89,
-        "overall": 58,
-        "skater": {
-          "skating": 60,
-          "shooting": 47,
-          "passing": 55,
-          "checking": 66,
-          "defense": 68
         },
         "goalie": null
       },
@@ -13454,6 +13457,29 @@
           "passing": 50,
           "checking": 39,
           "defense": 40
+        },
+        "goalie": null
+      },
+      {
+        "id": "05rjs",
+        "name": "Cruz Lucius",
+        "nhlTeam": "ANA",
+        "teamCode": "CBO",
+        "positions": [
+          "RW"
+        ],
+        "primaryPosition": "RW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 22,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 45,
+          "shooting": 51,
+          "passing": 41,
+          "checking": 39,
+          "defense": 31
         },
         "goalie": null
       },
@@ -13773,29 +13799,6 @@
         "goalie": null
       },
       {
-        "id": "06sqn",
-        "name": "Nathan Behm",
-        "nhlTeam": "CHI",
-        "teamCode": "CBO",
-        "positions": [
-          "RW"
-        ],
-        "primaryPosition": "RW",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 19,
-        "score": 0,
-        "overall": 40,
-        "skater": {
-          "skating": 41,
-          "shooting": 51,
-          "passing": 42,
-          "checking": 39,
-          "defense": 36
-        },
-        "goalie": null
-      },
-      {
         "id": "072z2",
         "name": "Dmitri Borichev",
         "nhlTeam": "NSH",
@@ -13836,6 +13839,29 @@
           "positioning": 40,
           "reboundControl": 37
         }
+      },
+      {
+        "id": "076kr",
+        "name": "Jonas Lagerberg Hoen",
+        "nhlTeam": "OTT",
+        "teamCode": "CBO",
+        "positions": [
+          "RW"
+        ],
+        "primaryPosition": "RW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 18,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 44,
+          "shooting": 49,
+          "passing": 36,
+          "checking": 39,
+          "defense": 38
+        },
+        "goalie": null
       }
     ],
     "MW": [
@@ -13850,8 +13876,8 @@
         "primaryPosition": "G",
         "role": "goalie",
         "skaterRole": null,
-        "age": 30,
-        "score": 98.16,
+        "age": 31,
+        "score": 98.15,
         "overall": 95,
         "skater": null,
         "goalie": {
@@ -13872,7 +13898,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 29,
-        "score": 89.64,
+        "score": 89.63,
         "overall": 91,
         "skater": null,
         "goalie": {
@@ -14010,7 +14036,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 23,
+        "age": 24,
         "score": 68.1,
         "overall": 80,
         "skater": {
@@ -14023,26 +14049,25 @@
         "goalie": null
       },
       {
-        "id": "03as8",
-        "name": "Nikolaj Ehlers",
-        "nhlTeam": "CAR",
+        "id": "01zvp",
+        "name": "Bryan Rust",
+        "nhlTeam": "PIT",
         "teamCode": "MW",
         "positions": [
-          "LW",
           "RW"
         ],
-        "primaryPosition": "LW",
+        "primaryPosition": "RW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 30,
-        "score": 66.86,
+        "age": 34,
+        "score": 67.9,
         "overall": 80,
         "skater": {
-          "skating": 81,
-          "shooting": 84,
-          "passing": 81,
-          "checking": 84,
-          "defense": 75
+          "skating": 86,
+          "shooting": 89,
+          "passing": 76,
+          "checking": 80,
+          "defense": 74
         },
         "goalie": null
       },
@@ -14151,7 +14176,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 29,
-        "score": 60.15,
+        "score": 59.71,
         "overall": 76,
         "skater": null,
         "goalie": {
@@ -14218,7 +14243,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 22,
+        "age": 23,
         "score": 50.48,
         "overall": 71,
         "skater": {
@@ -14278,6 +14303,29 @@
         "goalie": null
       },
       {
+        "id": "059e1",
+        "name": "Braden Schneider",
+        "nhlTeam": "NYR",
+        "teamCode": "MW",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 24,
+        "score": 48.53,
+        "overall": 70,
+        "skater": {
+          "skating": 70,
+          "shooting": 62,
+          "passing": 71,
+          "checking": 72,
+          "defense": 79
+        },
+        "goalie": null
+      },
+      {
         "id": "04zp2",
         "name": "Drew Helleson",
         "nhlTeam": "ANA",
@@ -14301,9 +14349,9 @@
         "goalie": null
       },
       {
-        "id": "05kuc",
-        "name": "Tyler Kleven",
-        "nhlTeam": "OTT",
+        "id": "060v8",
+        "name": "Elias Pettersson",
+        "nhlTeam": "VAN",
         "teamCode": "MW",
         "positions": [
           "D"
@@ -14311,15 +14359,15 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 24,
-        "score": 40.94,
-        "overall": 66,
+        "age": 22,
+        "score": 39.61,
+        "overall": 65,
         "skater": {
           "skating": 68,
           "shooting": 61,
           "passing": 66,
-          "checking": 69,
-          "defense": 70
+          "checking": 70,
+          "defense": 74
         },
         "goalie": null
       },
@@ -14335,7 +14383,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 39.25,
+        "score": 39.27,
         "overall": 65,
         "skater": null,
         "goalie": {
@@ -14368,9 +14416,33 @@
         "goalie": null
       },
       {
-        "id": "06aw5",
-        "name": "Uvis Balinskis",
-        "nhlTeam": "FLA",
+        "id": "04ln1",
+        "name": "Alex Turcotte",
+        "nhlTeam": "LAK",
+        "teamCode": "MW",
+        "positions": [
+          "C",
+          "LW"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 25,
+        "score": 36.75,
+        "overall": 64,
+        "skater": {
+          "skating": 65,
+          "shooting": 67,
+          "passing": 73,
+          "checking": 60,
+          "defense": 66
+        },
+        "goalie": null
+      },
+      {
+        "id": "043ca",
+        "name": "Josh Mahura",
+        "nhlTeam": "SEA",
         "teamCode": "MW",
         "positions": [
           "D"
@@ -14378,15 +14450,15 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 29,
-        "score": 32.82,
+        "age": 28,
+        "score": 33.65,
         "overall": 62,
         "skater": {
-          "skating": 64,
-          "shooting": 56,
-          "passing": 63,
-          "checking": 68,
-          "defense": 69
+          "skating": 63,
+          "shooting": 57,
+          "passing": 61,
+          "checking": 70,
+          "defense": 73
         },
         "goalie": null
       },
@@ -14414,29 +14486,6 @@
         "goalie": null
       },
       {
-        "id": "04zp7",
-        "name": "Albert Johansson",
-        "nhlTeam": "DET",
-        "teamCode": "MW",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 25,
-        "score": 31.16,
-        "overall": 61,
-        "skater": {
-          "skating": 60,
-          "shooting": 56,
-          "passing": 57,
-          "checking": 63,
-          "defense": 71
-        },
-        "goalie": null
-      },
-      {
         "id": "05g2s",
         "name": "Adam Wilsby",
         "nhlTeam": "NSH",
@@ -14447,7 +14496,7 @@
         "primaryPosition": "D",
         "role": "skater",
         "skaterRole": "D",
-        "age": 25,
+        "age": 26,
         "score": 29.99,
         "overall": 60,
         "skater": {
@@ -14456,6 +14505,29 @@
           "passing": 61,
           "checking": 69,
           "defense": 67
+        },
+        "goalie": null
+      },
+      {
+        "id": "060pq",
+        "name": "Alex Bump",
+        "nhlTeam": "PHI",
+        "teamCode": "MW",
+        "positions": [
+          "LW"
+        ],
+        "primaryPosition": "LW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 22,
+        "score": 29.57,
+        "overall": 60,
+        "skater": {
+          "skating": 59,
+          "shooting": 68,
+          "passing": 64,
+          "checking": 64,
+          "defense": 57
         },
         "goalie": null
       },
@@ -14965,25 +15037,25 @@
         "goalie": null
       },
       {
-        "id": "03d12",
-        "name": "David Pastrnak",
-        "nhlTeam": "BOS",
+        "id": "04dwj",
+        "name": "Jason Robertson",
+        "nhlTeam": "DAL",
         "teamCode": "MNS",
         "positions": [
-          "RW"
+          "LW"
         ],
-        "primaryPosition": "RW",
+        "primaryPosition": "LW",
         "role": "skater",
         "skaterRole": "F",
-        "age": 30,
-        "score": 83.1,
-        "overall": 88,
+        "age": 27,
+        "score": 82.31,
+        "overall": 87,
         "skater": {
-          "skating": 88,
-          "shooting": 94,
-          "passing": 92,
-          "checking": 87,
-          "defense": 79
+          "skating": 92,
+          "shooting": 96,
+          "passing": 85,
+          "checking": 88,
+          "defense": 78
         },
         "goalie": null
       },
@@ -15140,7 +15212,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 26,
-        "score": 69.86,
+        "score": 69.84,
         "overall": 81,
         "skater": null,
         "goalie": {
@@ -15243,53 +15315,6 @@
         "goalie": null
       },
       {
-        "id": "04qxy",
-        "name": "Alexander Romanov",
-        "nhlTeam": "NYI",
-        "teamCode": "MNS",
-        "positions": [
-          "D"
-        ],
-        "primaryPosition": "D",
-        "role": "skater",
-        "skaterRole": "D",
-        "age": 26,
-        "score": 49.58,
-        "overall": 71,
-        "skater": {
-          "skating": 68,
-          "shooting": 62,
-          "passing": 69,
-          "checking": 80,
-          "defense": 81
-        },
-        "goalie": null
-      },
-      {
-        "id": "05rjg",
-        "name": "Danila Yurov",
-        "nhlTeam": "MIN",
-        "teamCode": "MNS",
-        "positions": [
-          "C",
-          "LW"
-        ],
-        "primaryPosition": "C",
-        "role": "skater",
-        "skaterRole": "F",
-        "age": 22,
-        "score": 47.46,
-        "overall": 70,
-        "skater": {
-          "skating": 73,
-          "shooting": 68,
-          "passing": 73,
-          "checking": 71,
-          "defense": 70
-        },
-        "goalie": null
-      },
-      {
         "id": "02iqx",
         "name": "Nick Seeler",
         "nhlTeam": "PHI",
@@ -15309,6 +15334,30 @@
           "passing": 66,
           "checking": 72,
           "defense": 75
+        },
+        "goalie": null
+      },
+      {
+        "id": "03mn4",
+        "name": "Sam Steel",
+        "nhlTeam": "DAL",
+        "teamCode": "MNS",
+        "positions": [
+          "C",
+          "LW"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 28,
+        "score": 44.92,
+        "overall": 68,
+        "skater": {
+          "skating": 65,
+          "shooting": 68,
+          "passing": 74,
+          "checking": 67,
+          "defense": 66
         },
         "goalie": null
       },
@@ -15347,7 +15396,7 @@
         "role": "goalie",
         "skaterRole": null,
         "age": 25,
-        "score": 39.18,
+        "score": 38.95,
         "overall": 65,
         "skater": null,
         "goalie": {
@@ -15355,6 +15404,53 @@
           "positioning": 65,
           "reboundControl": 60
         }
+      },
+      {
+        "id": "05ubx",
+        "name": "Ryker Evans",
+        "nhlTeam": "SEA",
+        "teamCode": "MNS",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 24,
+        "score": 38.55,
+        "overall": 65,
+        "skater": {
+          "skating": 68,
+          "shooting": 55,
+          "passing": 63,
+          "checking": 70,
+          "defense": 73
+        },
+        "goalie": null
+      },
+      {
+        "id": "06bao",
+        "name": "Denver Barkey",
+        "nhlTeam": "PHI",
+        "teamCode": "MNS",
+        "positions": [
+          "C",
+          "LW"
+        ],
+        "primaryPosition": "C",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 21,
+        "score": 36.01,
+        "overall": 64,
+        "skater": {
+          "skating": 64,
+          "shooting": 63,
+          "passing": 69,
+          "checking": 66,
+          "defense": 64
+        },
+        "goalie": null
       },
       {
         "id": "06qw6",
@@ -15445,6 +15541,29 @@
           "passing": 61,
           "checking": 55,
           "defense": 62
+        },
+        "goalie": null
+      },
+      {
+        "id": "04lda",
+        "name": "Nolan Foote",
+        "nhlTeam": "PHI",
+        "teamCode": "MNS",
+        "positions": [
+          "LW"
+        ],
+        "primaryPosition": "LW",
+        "role": "skater",
+        "skaterRole": "F",
+        "age": 25,
+        "score": 15.77,
+        "overall": 52,
+        "skater": {
+          "skating": 58,
+          "shooting": 60,
+          "passing": 52,
+          "checking": 56,
+          "defense": 47
         },
         "goalie": null
       },
@@ -15777,7 +15896,7 @@
         "primaryPosition": "C",
         "role": "skater",
         "skaterRole": "F",
-        "age": 18,
+        "age": 19,
         "score": 0,
         "overall": 40,
         "skater": {
@@ -15786,6 +15905,29 @@
           "passing": 47,
           "checking": 41,
           "defense": 42
+        },
+        "goalie": null
+      },
+      {
+        "id": "06une",
+        "name": "Jonas Woo",
+        "nhlTeam": "CBJ",
+        "teamCode": "MNS",
+        "positions": [
+          "D"
+        ],
+        "primaryPosition": "D",
+        "role": "skater",
+        "skaterRole": "D",
+        "age": 19,
+        "score": 0,
+        "overall": 40,
+        "skater": {
+          "skating": 39,
+          "shooting": 28,
+          "passing": 38,
+          "checking": 46,
+          "defense": 49
         },
         "goalie": null
       },

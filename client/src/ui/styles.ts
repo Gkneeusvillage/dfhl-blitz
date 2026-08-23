@@ -473,6 +473,10 @@ const CSS = `
 
 .hud__spacer { flex: 1 1 auto; }
 
+/* A franchise with no usable roster in the current export. */
+.teambtn--empty { opacity: 0.4; }
+.teambtn--empty .teambtn__meta { color: var(--bad); }
+
 /* The sprite lab reuses the standard screen shell; it only needs a readout style. */
 .lab__value {
   font-family: Consolas, monospace;
