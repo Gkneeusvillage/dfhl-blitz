@@ -8,6 +8,7 @@ import { LinePickerScene } from './scenes/LinePickerScene.js';
 import { LobbyScene } from './scenes/LobbyScene.js';
 import { MatchScene } from './scenes/MatchScene.js';
 import { PostGameScene } from './scenes/PostGameScene.js';
+import { SpriteLabScene } from './scenes/SpriteLabScene.js';
 import { TeamSelectScene } from './scenes/TeamSelectScene.js';
 import { TitleScene } from './scenes/TitleScene.js';
 
@@ -57,10 +58,25 @@ const game = new Phaser.Game({
     MatchScene,
     PostGameScene,
     ControlsScene,
+    SpriteLabScene,
   ],
   callbacks: {
     preBoot: (instance) => instance.registry.set('session', session),
-    postBoot: () => fitCanvas(),
+    postBoot: () => {
+      fitCanvas();
+      /*
+       * `?sprites` opens the art lab instead of the game.
+       *
+       * A query parameter rather than a build flag, deliberately: the art has to
+       * be judged where it will actually be seen, which is the deployed URL on
+       * somebody else's monitor, not a dev build on this machine. It costs one
+       * scene in the bundle and nothing at runtime for anyone who does not ask.
+       */
+      if (new URLSearchParams(window.location.search).has('sprites')) {
+        game.scene.start('SpriteLab');
+        game.scene.stop('Title');
+      }
+    },
   },
 });
 

@@ -474,6 +474,42 @@ const CSS = `
 .hud__spacer { flex: 1 1 auto; }
 
 /*
+ * The sprite lab's chrome.
+ *
+ * Fixed to the top, with the art it is judging drawn on the canvas underneath.
+ * Note there are no backticks anywhere in this sheet: the whole thing lives in a
+ * TypeScript template literal, so one in a comment silently ends the string. The panel is deliberately opaque:
+ * one of the backdrops is white ice and another is magenta, and controls that
+ * tint with the thing being reviewed are controls you cannot read.
+ */
+.lab {
+  position: fixed;
+  inset: 0 0 auto 0;
+  padding: 0.9em 1.1em 1em;
+  background: var(--panel-2);
+  border-bottom: 2px solid var(--edge);
+  z-index: 5;
+}
+.lab__title {
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-size: 1.6em;
+  letter-spacing: 0.04em;
+}
+.lab__hint { color: var(--ink-dim); font-size: 0.85em; margin-top: 0.15em; }
+.lab__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-top: 0.7em;
+  flex-wrap: wrap;
+}
+.lab__value {
+  font-family: Consolas, monospace;
+  color: var(--accent);
+  min-width: 5em;
+}
+
+/*
  * The goal light.
  *
  * Absolutely positioned over the whole window rather than drawn on the canvas,
