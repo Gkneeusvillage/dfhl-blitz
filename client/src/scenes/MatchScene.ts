@@ -49,7 +49,7 @@
 
 import Phaser from 'phaser';
 
-import { RINK, TICK_RATE, emptyInput } from '@dfhl/shared';
+import { RENDER, RINK, TICK_RATE, emptyInput } from '@dfhl/shared';
 import type { GamePhase, PlayerInput, TeamSide } from '@dfhl/shared';
 
 import { audio, playEvents } from '../audio/index.js';
@@ -77,6 +77,15 @@ const BUTTON_START = 9;
 
 /** Round trip above which the readout appears. Below this nobody can feel it. */
 const RTT_WARN_MS = 140;
+
+/**
+ * Least of the rink's 85 ft width kept on screen, whatever the window shape.
+ * Enough to see the linemate you are passing to, above and below you.
+ */
+const MIN_VISIBLE_FEET_TALL = 46;
+
+/** Frames per second below which the diagnostics line shows itself. */
+const FPS_WARN = 50;
 
 /** How long the readout stays up after the link recovers, so a spike is readable. */
 const NET_HOLD_MS = 2500;
@@ -135,6 +144,10 @@ export class MatchScene extends Phaser.Scene {
   private startWasDown = false;
   private netVisibleForMs = 0;
   private unsubscribes: Array<() => void> = [];
+
+  /** Smoothed camera centre, in world pixels. Null until the first frame places it. */
+  private cameraX: number | null = null;
+  private cameraY: number | null = null;
 
   /** Decaying 0..1.5 shake budget; see `addShake`. */
   private shake = 0;
@@ -226,6 +239,7 @@ export class MatchScene extends Phaser.Scene {
     if (cue.shake > 0) this.addShake(cue.shake);
     if (cue.goalFor !== null) this.flashGoal(cue.goalFor);
     this.stepFeel(delta);
+    this.trackCamera(view, delta);
 
     this.drawHud(view);
     this.drawEntities(view);
@@ -247,25 +261,71 @@ export class MatchScene extends Phaser.Scene {
   private stepFeel(delta: number): void {
     const seconds = delta / 1000;
 
-    if (this.shake > 0.001) {
-      this.shake = Math.max(0, this.shake - seconds * SHAKE_DECAY_PER_SECOND);
-      const magnitude = this.shake * SHAKE_MAX_PIXELS;
-      // Deterministic wobble: a sine pair rather than random, so the shake reads
-      // as an impact rather than as noise, and never lands on a jarring jump.
-      const t = this.time.now / 1000;
-      this.cameras.main.setScroll(
-        Math.sin(t * 97) * magnitude,
-        Math.cos(t * 113) * magnitude,
-      );
-    } else if (this.cameras.main.scrollX !== 0 || this.cameras.main.scrollY !== 0) {
-      this.cameras.main.setScroll(0, 0);
-    }
+    if (this.shake > 0.001) this.shake = Math.max(0, this.shake - seconds * SHAKE_DECAY_PER_SECOND);
 
     if (this.goalFlash > 0) {
       this.goalFlash = Math.max(0, this.goalFlash - seconds / GOAL_FLASH_SECONDS);
       this.flashNode.style.opacity = String(this.goalFlash * 0.42);
       this.flashNode.hidden = this.goalFlash <= 0;
     }
+  }
+
+  /**
+   * Point the camera at the play, and apply the shake as an offset on top.
+   *
+   * Follows the puck rather than the player, because the puck is what everyone on
+   * both teams is looking at, and a camera that follows your own skater swings
+   * wildly every time control auto-switches to whoever is nearest the puck.
+   *
+   * The lerp is what keeps it watchable: snapping the camera to a puck that
+   * changes direction sixty times a second is unusable. The clamp is what keeps
+   * it honest — the view never travels past the boards, so the ice always fills
+   * the frame and there is no black void beyond the rink to get lost in.
+   */
+  private trackCamera(view: RenderView, delta: number): void {
+    const t = this.transform;
+    const camera = this.cameras.main;
+
+    const carried = this.session.carriedPuck();
+    const puck = carried ?? view.puck;
+    const targetX = t.toScreenX(puck.x);
+    const targetY = t.toScreenY(puck.y);
+
+    if (this.cameraX === null || this.cameraY === null) {
+      this.cameraX = targetX;
+      this.cameraY = targetY;
+    } else {
+      // Frame-rate independent smoothing: the same easing at 30 fps and 144 fps,
+      // rather than a per-frame lerp that drags on a slow machine.
+      const k = 1 - Math.pow(1 - RENDER.cameraLerp, (delta / 1000) * 60);
+      this.cameraX += (targetX - this.cameraX) * k;
+      this.cameraY += (targetY - this.cameraY) * k;
+    }
+
+    const halfW = camera.width / 2;
+    const halfH = camera.height / 2;
+    const ppf = t.pixelsPerFoot;
+    // A little past the boards, so the rink edge is not welded to the screen edge.
+    const marginX = RINK.halfLength * ppf + 8 - halfW;
+    const marginY = RINK.halfWidth * ppf + 8 - halfH;
+
+    // When the whole sheet already fits on an axis, centre it instead of clamping
+    // to a range that has inverted.
+    const centreX = marginX <= 0 ? 0 : clampTo(this.cameraX, -marginX, marginX);
+    const centreY = marginY <= 0 ? 0 : clampTo(this.cameraY, -marginY, marginY);
+
+    let shakeX = 0;
+    let shakeY = 0;
+    if (this.shake > 0.001) {
+      const magnitude = this.shake * SHAKE_MAX_PIXELS;
+      // Deterministic wobble: a sine pair rather than random, so the shake reads
+      // as an impact rather than as noise, and never lands on a jarring jump.
+      const t2 = this.time.now / 1000;
+      shakeX = Math.sin(t2 * 97) * magnitude;
+      shakeY = Math.cos(t2 * 113) * magnitude;
+    }
+
+    camera.setScroll(centreX - halfW + shakeX, centreY - halfH + shakeY);
   }
 
   /** The goal light: the scoring team's own colour, which is the point of it. */
@@ -309,19 +369,45 @@ export class MatchScene extends Phaser.Scene {
    * fixed 1280x720 upscaled to fit — a 1440p monitor draws the rink at 1440p
    * instead of magnifying a 720p one.
    */
+  /**
+   * Scale the ice and lay it out in WORLD space, once.
+   *
+   * The camera used to be pinned so the whole 200 ft sheet fitted on screen. That
+   * is what made the players look like blobs: 200 ft across a 1150 px window is
+   * 5.75 pixels per foot, so a real-sized hockey player is drawn about 20 px tall
+   * and no amount of redrawing the sprite fixes it. `RENDER.cameraVisibleFeet`
+   * has been sitting in tuning unused since Phase 0 for exactly this.
+   *
+   * So the rink is now drawn once at a fixed world origin and the CAMERA moves
+   * over it, which is what the era actually did — NHL '94 never showed both nets
+   * at once. `toScreenX`/`toScreenY` therefore return world pixels now, not
+   * screen pixels, and every game object placed through them scrolls for free.
+   * The HUD is DOM and sits outside the camera entirely, so it does not move.
+   */
   private layoutRink(): void {
     const width = Math.max(320, this.scale.width);
     const height = Math.max(240, this.scale.height);
 
-    const pixelsPerFoot = Math.min(
-      (width - 40) / RINK.length,
-      (height - HUD_MARGIN_TOP - HUD_MARGIN_BOTTOM) / RINK.width,
-    );
-    this.transform = createRinkTransform(
-      width / 2,
-      HUD_MARGIN_TOP + (height - HUD_MARGIN_TOP - HUD_MARGIN_BOTTOM) / 2,
-      Math.max(1, pixelsPerFoot),
-    );
+    /*
+     * Zoom from the WIDTH, not from whichever axis is tighter.
+     *
+     * Requiring the rink's full 85 ft height to fit is what kept everything tiny:
+     * the sheet is 200x85, an aspect of 2.35:1, which is wider than almost any
+     * window — so "fit the whole rink" is always height-bound and the width goes
+     * unused. Measured on a real 1900 px screen: 1150 px of rink, 5.75 pixels per
+     * foot, a hockey player 20 px tall. The camera scrolls vertically instead.
+     *
+     * The floor stops that going silly on a short window: below about half the
+     * rink's height you can no longer see the linemate you are trying to pass to,
+     * and a pass to somebody off-screen is worse than a smaller skater.
+     */
+    const available = height - HUD_MARGIN_TOP - HUD_MARGIN_BOTTOM;
+    const byWidth = width / RENDER.cameraVisibleFeet;
+    const keepVisibleTall = available / MIN_VISIBLE_FEET_TALL;
+    const pixelsPerFoot = Math.max(1, Math.min(byWidth, keepVisibleTall));
+
+    // World origin = centre ice. The camera does the rest.
+    this.transform = createRinkTransform(0, 0, pixelsPerFoot);
 
     const config = this.session.config;
     drawRink(
@@ -441,8 +527,19 @@ export class MatchScene extends Phaser.Scene {
       // where the body you have to skate around actually is.
       place(spriteFor('skater', this.sideCode(skater.side), facing), sx, sy, stunned ? 0.5 : 1);
 
-      const name = this.names.get(skater.playerId);
-      if (name !== undefined) label(name, sx, sy + r + 6, isSelf ? '#ffffff' : '#cfdcef');
+      /*
+       * Only your own skater gets a name.
+       *
+       * Labelling all six put five names in an overlapping pile at centre ice —
+       * seen on a real screenshot, where the names were bigger than the men
+       * wearing them and hid the puck between them. NHL '94 put no names on the
+       * ice at all. The one thing you need is which of the three is yours, and
+       * the white ring already says it; the name only confirms it.
+       */
+      if (isSelf) {
+        const name = this.names.get(skater.playerId);
+        if (name !== undefined) label(name, sx, sy + r + 8, '#ffffff');
+      }
     }
 
     for (let i = labelIndex; i < this.nameTexts.length; i++) this.nameTexts[i].setVisible(false);
@@ -626,9 +723,18 @@ export class MatchScene extends Phaser.Scene {
     }
 
     const rtt = status.rttMs;
+    /*
+     * A dropped frame rate is a degraded connection as far as the player is
+     * concerned — "it felt choppy" is the same complaint whether the cause was
+     * the network or the renderer, and they cannot tell which from the outside.
+     * Putting fps behind the same trigger means the readout appears exactly when
+     * something is wrong and stays out of the way when nothing is.
+     */
+    const fps = this.game.loop.actualFps;
     const degraded =
       status.state !== 'playing' ||
       (rtt !== null && rtt > RTT_WARN_MS) ||
+      (fps > 0 && fps < FPS_WARN) ||
       (metrics?.stalled ?? false);
 
     this.netVisibleForMs = degraded ? NET_HOLD_MS : Math.max(0, this.netVisibleForMs - deltaMs);
@@ -636,6 +742,7 @@ export class MatchScene extends Phaser.Scene {
     if (this.netNode.hidden) return;
 
     const parts = [rtt === null ? 'rtt —' : `rtt ${Math.round(rtt)}ms`];
+    if (fps > 0) parts.push(`${Math.round(fps)} fps`);
     if (status.state !== 'playing') parts.push(status.state);
     if (metrics !== null && metrics.stalled) parts.push('waiting for the server');
     if (this.session.isSpectating) parts.push('spectating');
@@ -779,4 +886,9 @@ class GatedInput implements InputSource {
   destroy(): void {
     this.inner.destroy();
   }
+}
+
+/** Clamp, kept local so the camera maths reads in one place. */
+function clampTo(value: number, min: number, max: number): number {
+  return value < min ? min : value > max ? max : value;
 }
