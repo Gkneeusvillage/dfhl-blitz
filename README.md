@@ -106,16 +106,27 @@ npm run build:rosters
 
 Drop the new export at `data/fantrax-rosters.csv`, run that, redeploy.
 
-- **Your team names and colours survive.** `shared/data/teams.config.json` is
-  hand-edited and the pipeline never regenerates it. Only player data comes from
-  the CSV, so edit that file to rename a franchise or change its jersey colours.
+- **Franchise names come from the export.** Put the full form in Fantrax's
+  Status column — `Halifax Citadels - HC` — and the build reads the name from
+  before the dash and the league code from after it, then writes both into
+  `shared/data/teams.config.json`. Rename a team in Fantrax and the game
+  follows; the build prints every rename it applied. A bare code (`Jets`) still
+  works and leaves that team's existing name alone.
+- **Your jersey colours survive.** The build only ever rewrites names and
+  abbreviations. Colours are hand-edited in the same file and nothing
+  regenerates them, so a rename never costs you a colour scheme.
+- **A team that cannot dress a line is called out.** Three skaters and a goalie
+  need at least 1 G, 2 D and 4 F. A franchise short of that doesn't fail the
+  build — the other thirteen still get written — but the run prints a loud
+  warning and team select greys that franchise out, so nobody picks it and
+  discovers the problem at the puck drop.
 - **Ratings don't churn.** Player identity keys off the stable Fantrax ID and
   the derivation is deterministic, so the same CSV always produces byte-identical
   output. A player who didn't change won't silently drift a rating point.
 - **Trades just work.** A player's `Status` column assigns them to a franchise,
   so mid-season movement is picked up automatically.
 - **One test will go red on purpose.** A block in `tools/build-rosters.test.ts`
-  records the current player counts — 691 across 14 teams today. A new export
+  records the current player counts — 697 across 14 teams today. A new export
   changes those, and that failure is the check telling you the CSV you dropped
   in is the file you think it is, rather than a truncated download. Copy the new
   figures from the build's own console summary.
