@@ -1,5 +1,5 @@
 /**
- * The player art, drawn in code.
+ * Turning the generated art into Phaser textures.
  *
  * WHY GENERATED RATHER THAN DRAWN BY HAND
  *
@@ -8,17 +8,16 @@
  * go stale the moment somebody changes a colour, or a single grey sprite tinted
  * whole — and Phaser's tint multiplies the ENTIRE texture, so a tinted skater
  * gets a red helmet, red skates and a red stick along with the sweater. Drawing
- * per team at match start costs a few milliseconds for the two teams on the ice
- * and keeps every pixel under our control: sweater in the primary, helmet and
- * socks in the secondary, skin and stick in neither.
+ * per team at match start keeps every pixel under our control.
  *
- * WHY EIGHT BAKED DIRECTIONS INSTEAD OF ROTATING ONE SPRITE
+ * The drawing itself lives in `figures.ts` (pure, testable in node); this module
+ * only packs the frames into one sheet per team and names them.
  *
- * Rotating pixel art resamples it, and resampled pixel art stops looking like
- * pixel art — the edges go soft and the whole retro premise leaks away. Eight
- * headings baked at draw time keeps every sprite axis-aligned on screen. Eight
- * is also what the era actually did, and at this size the snapping between them
- * reads as animation rather than as a limitation.
+ * ONE SHEET PER TEAM
+ *
+ * v0.1 made 33 separate little canvases. With animation that would be over two
+ * hundred, so each team's skater and goalie frames go into a single canvas and
+ * are addressed as named frames: `s:<pose>:<direction>` and `g:<pose>:<direction>`.
  *
  * WHY NEAREST FILTERING
  *
@@ -29,183 +28,88 @@
  */
 
 import Phaser from 'phaser';
+import { RINK } from '@dfhl/shared';
 
-/** Authoring grid. Everything below is in these units, then scaled by NEAREST. */
-const CELL = 32;
+import {
+  CELL,
+  DIRECTIONS,
+  FEET_X,
+  FEET_Y,
+  GOALIE_POSES,
+  NET_ANCHOR_X,
+  NET_ANCHOR_Y,
+  NET_HEIGHT,
+  NET_WIDTH,
+  PUCK_CELL,
+  PX_PER_FOOT,
+  SKATER_POSES,
+  directionIndex,
+  drawGoalie,
+  drawNet,
+  drawPuck,
+  drawSkater,
+  kitFor,
+  type GoaliePose,
+  type JerseyColors,
+  type SkaterPose,
+} from './figures.js';
+import type { Raster } from './pixels.js';
 
-/** Headings baked, starting at +x and going clockwise on screen. */
-export const DIRECTIONS = 8;
+export { DIRECTIONS, GOALIE_POSES, SKATER_POSES };
+export type { GoaliePose, JerseyColors, SkaterPose };
 
-const SKIN = '#e8b98a';
-const STICK = '#c48a4a';
-const BLADE = '#2a2f3a';
-const DARK = '#12161f';
-const ICE_SHADOW = 'rgba(0,0,0,0.28)';
+/** World size of one player cell, in feet. */
+export const SPRITE_FEET = CELL / PX_PER_FOOT;
+/** Image origin that puts the player's feet on their simulated position. */
+export const SPRITE_ORIGIN_X = FEET_X / CELL;
+export const SPRITE_ORIGIN_Y = FEET_Y / CELL;
 
-export interface JerseyColors {
-  primary: string;
-  secondary: string;
+export const PUCK_TEXTURE = 'dfhl:puck';
+export const PUCK_FEET = PUCK_CELL / PX_PER_FOOT;
+
+export const NET_FEET_WIDE = NET_WIDTH / PX_PER_FOOT;
+export const NET_FEET_TALL = NET_HEIGHT / PX_PER_FOOT;
+export const NET_ORIGIN_X = NET_ANCHOR_X / NET_WIDTH;
+export const NET_ORIGIN_Y = NET_ANCHOR_Y / NET_HEIGHT;
+
+export function kitTexture(code: string): string {
+  return `dfhl:kit:${code}`;
 }
 
-function textureKey(kind: string, code: string, direction: number): string {
-  return `dfhl:${kind}:${code}:${direction}`;
+export function netTexture(code: string): string {
+  return `dfhl:net:${code}`;
 }
 
-/**
- * Draw one skater at one heading.
- *
- * The figure is built from the top down as a real broadcast angle would read it:
- * a shadow on the ice, then skates, then the sweater, then shoulders, then the
- * helmet, with the stick laid across the front. Order matters — the stick has to
- * sit over the sweater or it looks like the player is holding it behind them.
- */
-function drawSkater(ctx: CanvasRenderingContext2D, colors: JerseyColors, angle: number): void {
-  const c = CELL / 2;
-  ctx.clearRect(0, 0, CELL, CELL);
-
-  ctx.save();
-  ctx.translate(c, c);
-  ctx.rotate(angle);
-  // Draw in a space where +x is "the way this player is facing", then let the
-  // rotation above place it. The pixels are still snapped by NEAREST on display.
-  ctx.imageSmoothingEnabled = false;
-
-  // Shadow, offset slightly so the skater reads as standing on the ice.
-  ctx.fillStyle = ICE_SHADOW;
-  ctx.beginPath();
-  ctx.ellipse(0, 3, 9, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Skates.
-  ctx.fillStyle = BLADE;
-  ctx.fillRect(-6, -7, 5, 3);
-  ctx.fillRect(-6, 4, 5, 3);
-
-  // Sweater: a torso wider at the shoulders than the waist.
-  ctx.fillStyle = colors.primary;
-  ctx.beginPath();
-  ctx.moveTo(-6, -7);
-  ctx.lineTo(5, -6);
-  ctx.lineTo(5, 6);
-  ctx.lineTo(-6, 7);
-  ctx.closePath();
-  ctx.fill();
-
-  // Shoulder yoke and socks in the second colour, which is what makes two teams
-  // with similar primaries still tell apart at a glance.
-  ctx.fillStyle = colors.secondary;
-  ctx.fillRect(2, -7, 3, 14);
-  ctx.fillRect(-6, -7, 2, 3);
-  ctx.fillRect(-6, 4, 2, 3);
-
-  // Gloves.
-  ctx.fillStyle = DARK;
-  ctx.fillRect(4, -9, 4, 4);
-  ctx.fillRect(4, 5, 4, 4);
-
-  // Helmet, with a sliver of face so the heading is readable at a glance.
-  ctx.fillStyle = colors.secondary;
-  ctx.beginPath();
-  ctx.arc(3, 0, 5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = SKIN;
-  ctx.fillRect(6, -2, 2, 4);
-
-  // Stick: shaft forward and across, blade on the ice ahead of the player.
-  ctx.strokeStyle = STICK;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(5, -7);
-  ctx.lineTo(13, 4);
-  ctx.stroke();
-  ctx.fillStyle = BLADE;
-  ctx.fillRect(12, 3, 5, 2);
-
-  ctx.restore();
+export function skaterFrame(pose: SkaterPose, facing: number): string {
+  return `s:${pose}:${directionIndex(facing)}`;
 }
 
-/** The goalie: bigger, squarer, unmistakably not a skater. */
-function drawGoalie(ctx: CanvasRenderingContext2D, colors: JerseyColors, angle: number): void {
-  const c = CELL / 2;
-  ctx.clearRect(0, 0, CELL, CELL);
-
-  ctx.save();
-  ctx.translate(c, c);
-  ctx.rotate(angle);
-  ctx.imageSmoothingEnabled = false;
-
-  ctx.fillStyle = ICE_SHADOW;
-  ctx.beginPath();
-  ctx.ellipse(0, 3, 11, 7, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Pads: the widest thing on the ice, and the reason a goalie reads as a wall.
-  ctx.fillStyle = '#f2f4f8';
-  ctx.fillRect(2, -11, 7, 9);
-  ctx.fillRect(2, 2, 7, 9);
-
-  ctx.fillStyle = colors.primary;
-  ctx.beginPath();
-  ctx.moveTo(-7, -8);
-  ctx.lineTo(4, -7);
-  ctx.lineTo(4, 7);
-  ctx.lineTo(-7, 8);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = colors.secondary;
-  ctx.fillRect(1, -8, 3, 16);
-
-  // Blocker and trapper.
-  ctx.fillStyle = DARK;
-  ctx.fillRect(5, -12, 5, 5);
-  ctx.fillRect(5, 7, 5, 5);
-
-  ctx.fillStyle = colors.secondary;
-  ctx.beginPath();
-  ctx.arc(2, 0, 5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#cfd6e2';
-  ctx.fillRect(5, -2, 2, 4);
-
-  ctx.strokeStyle = STICK;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(4, -6);
-  ctx.lineTo(12, 6);
-  ctx.stroke();
-
-  ctx.restore();
+export function goalieFrame(pose: GoaliePose, facing: number): string {
+  return `g:${pose}:${directionIndex(facing)}`;
 }
 
-/** The puck: a disc with a highlight, so it is findable against white ice. */
-function drawPuck(ctx: CanvasRenderingContext2D): void {
-  ctx.clearRect(0, 0, CELL, CELL);
-  const c = CELL / 2;
-  ctx.fillStyle = ICE_SHADOW;
-  ctx.beginPath();
-  ctx.ellipse(c, c + 2, 6, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#0c0f16';
-  ctx.beginPath();
-  ctx.ellipse(c, c, 6, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#39404f';
-  ctx.beginPath();
-  ctx.ellipse(c - 1, c - 1, 3, 2, 0, 0, Math.PI * 2);
-  ctx.fill();
+export function puckFrame(index: number): string {
+  return `p:${index % 2}`;
 }
 
-function bake(
+function put(ctx: CanvasRenderingContext2D, raster: Raster, x: number, y: number): void {
+  // Copy into a fresh buffer: ImageData wants its own ArrayBuffer.
+  ctx.putImageData(new ImageData(new Uint8ClampedArray(raster.data), raster.width, raster.height), x, y);
+}
+
+function bakeSheet(
   scene: Phaser.Scene,
   key: string,
-  paint: (ctx: CanvasRenderingContext2D) => void,
+  width: number,
+  height: number,
+  paint: (ctx: CanvasRenderingContext2D, add: (name: string, x: number, y: number, w: number, h: number) => void) => void,
 ): void {
   if (scene.textures.exists(key)) return;
-  const texture = scene.textures.createCanvas(key, CELL, CELL);
+  const texture = scene.textures.createCanvas(key, width, height);
   if (texture === null) return;
-  paint(texture.getContext());
-  // NEAREST is what keeps the enlargement blocky rather than blurry.
+  paint(texture.getContext(), (name, x, y, w, h) => {
+    texture.add(name, 0, x, y, w, h);
+  });
   texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
   texture.refresh();
 }
@@ -213,30 +117,44 @@ function bake(
 /**
  * Generate every texture a match needs, once.
  *
- * Called with the two teams actually playing, so this is 8 headings x 2 kinds x
- * 2 teams plus a puck — 33 small canvases, a few milliseconds, and nothing to
- * download.
+ * Called with the two teams actually playing: a skater sheet of 9 poses x 8
+ * headings and a goalie sheet of 5 x 8 per team, a net in each team's colour,
+ * and the puck. Nothing to download.
  */
 export function bakeMatchSprites(
   scene: Phaser.Scene,
   teams: Array<{ code: string; colors: JerseyColors }>,
 ): void {
   for (const team of teams) {
-    for (let d = 0; d < DIRECTIONS; d++) {
-      const angle = (d / DIRECTIONS) * Math.PI * 2;
-      bake(scene, textureKey('skater', team.code, d), (ctx) => drawSkater(ctx, team.colors, angle));
-      bake(scene, textureKey('goalie', team.code, d), (ctx) => drawGoalie(ctx, team.colors, angle));
-    }
+    const kit = kitFor(team.colors);
+    const columns = Math.max(SKATER_POSES.length, GOALIE_POSES.length);
+    bakeSheet(scene, kitTexture(team.code), columns * CELL, DIRECTIONS * 2 * CELL, (ctx, add) => {
+      for (let d = 0; d < DIRECTIONS; d++) {
+        SKATER_POSES.forEach((pose, column) => {
+          const x = column * CELL;
+          const y = d * CELL;
+          put(ctx, drawSkater(kit, pose, d), x, y);
+          add(`s:${pose}:${d}`, x, y, CELL, CELL);
+        });
+        GOALIE_POSES.forEach((pose, column) => {
+          const x = column * CELL;
+          const y = (DIRECTIONS + d) * CELL;
+          put(ctx, drawGoalie(kit, pose, d), x, y);
+          add(`g:${pose}:${d}`, x, y, CELL, CELL);
+        });
+      }
+    });
+
+    bakeSheet(scene, netTexture(team.code), NET_WIDTH, NET_HEIGHT, (ctx, add) => {
+      put(ctx, drawNet(team.colors.primary, RINK.goalHalfWidth, RINK.goalDepth), 0, 0);
+      add('net', 0, 0, NET_WIDTH, NET_HEIGHT);
+    });
   }
-  bake(scene, 'dfhl:puck', drawPuck);
-}
 
-/** The baked texture nearest to a heading in radians. */
-export function spriteFor(kind: 'skater' | 'goalie', code: string, facing: number): string {
-  const step = (Math.PI * 2) / DIRECTIONS;
-  const index = ((Math.round(facing / step) % DIRECTIONS) + DIRECTIONS) % DIRECTIONS;
-  return textureKey(kind, code, index);
+  bakeSheet(scene, PUCK_TEXTURE, PUCK_CELL * 2, PUCK_CELL, (ctx, add) => {
+    for (let i = 0; i < 2; i++) {
+      put(ctx, drawPuck(i), i * PUCK_CELL, 0);
+      add(`p:${i}`, i * PUCK_CELL, 0, PUCK_CELL, PUCK_CELL);
+    }
+  });
 }
-
-/** World size of one sprite cell, in feet. Skaters are 1.6 ft radius. */
-export const SPRITE_FEET = 5.4;

@@ -11,7 +11,7 @@
  *
  * IT CALLS THE REAL BAKING PATH
  *
- * `bakeMatchSprites` and `spriteFor` are the same functions a match uses, called
+ * `bakeMatchSprites` and the frame lookups are the same functions a match uses, called
  * here with all fourteen franchises instead of the two on the ice. A second
  * drawing path built "just for the preview" would drift from the real one and
  * then flatter it — you would be reviewing art the game does not ship.
@@ -24,6 +24,14 @@
  * debug page is still a page somebody has to drive with whatever is in their
  * hands.
  *
+ * IT PLAYS THE ANIMATIONS
+ *
+ * v0.2 added a stride cycle, shots, checks, falls and goalie saves. A still
+ * frame of a stride says nothing about whether the cycle reads as skating, so
+ * the eight headings run the stride live, next to the one-off poses and the
+ * goalie's. The Arena button swaps the grid for the baked rink, so the ice can
+ * be judged the same way.
+ *
  * THE ZOOM CONTROL IS NOT A LUXURY
  *
  * At 96px you can see every pixel and judge the drawing; at 24px you find out
@@ -34,7 +42,18 @@
 import Phaser from 'phaser';
 
 import { colorToInt, TEAM_LIST } from '../data/teams.js';
-import { DIRECTIONS, bakeMatchSprites, spriteFor } from '../render/sprites.js';
+import { bakeArena } from '../render/rink.js';
+import {
+  DIRECTIONS,
+  PUCK_TEXTURE,
+  bakeMatchSprites,
+  goalieFrame,
+  kitTexture,
+  netTexture,
+  skaterFrame,
+  type GoaliePose,
+  type SkaterPose,
+} from '../render/sprites.js';
 import { UiScreen, button, div, write } from '../ui/index.js';
 
 /** Backgrounds worth judging against, in the order the toggle cycles them. */
@@ -46,8 +65,14 @@ const BACKDROPS = [
 ] as const;
 
 /** Display size of one sprite cell, in screen pixels. */
-const ZOOMS = [16, 24, 32, 48, 64, 96, 128];
-const DEFAULT_ZOOM = 4;
+const ZOOMS = [28, 42, 56, 84, 112, 168];
+const DEFAULT_ZOOM = 2;
+
+const STRIDE: SkaterPose[] = ['stride0', 'stride1', 'stride2', 'stride3'];
+const ONE_OFFS: SkaterPose[] = ['glide', 'windup', 'shoot', 'check', 'down'];
+const GOALIE: GoaliePose[] = ['stance', 'butterfly', 'glove'];
+/** Stride frames per second in the lab — about a skater at full speed. */
+const STRIDE_FPS = 9;
 
 /** Room for the franchise name and its two colour swatches. */
 const LABEL_WIDTH = 190;
@@ -58,6 +83,11 @@ export class SpriteLabScene extends Phaser.Scene {
   private backdropValue!: HTMLDivElement;
   private zoomIndex = DEFAULT_ZOOM;
   private backdropIndex = 0;
+  private showArena = false;
+  private arenaValue!: HTMLDivElement;
+  /** The images running the stride cycle, with the heading each one shows. */
+  private striders: Array<{ image: Phaser.GameObjects.Image; texture: string; facing: number }> = [];
+  private strideClock = 0;
 
   /** Everything the last layout drew, torn down before the next one. */
   private drawn: Phaser.GameObjects.GameObject[] = [];
@@ -91,6 +121,10 @@ export class SpriteLabScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     // What drives focus navigation. Without it the d-pad does nothing.
     this.screen.update(delta);
+
+    this.strideClock += delta;
+    const frame = STRIDE[Math.floor((this.strideClock / 1000) * STRIDE_FPS) % STRIDE.length];
+    for (const s of this.striders) s.image.setTexture(s.texture, skaterFrame(frame, s.facing));
   }
 
   // -------------------------------------------------------------------------
@@ -104,6 +138,7 @@ export class SpriteLabScene extends Phaser.Scene {
 
     this.zoomValue = div('lab__value', `${ZOOMS[this.zoomIndex]}px`);
     this.backdropValue = div('lab__value', BACKDROPS[this.backdropIndex].name);
+    this.arenaValue = div('lab__value', 'off');
 
     /*
      * The body is left empty and made transparent on purpose: the art is on the
@@ -130,6 +165,8 @@ export class SpriteLabScene extends Phaser.Scene {
       }),
       button('Background', { className: 'btn--ghost', onClick: () => this.cycleBackdrop() }),
       this.backdropValue,
+      button('Arena', { className: 'btn--ghost', onClick: () => this.toggleArena() }),
+      this.arenaValue,
       button('Back to the game', { className: 'btn--primary', onClick: () => this.exit() }),
     );
     this.screen.focusFirst();
@@ -138,6 +175,12 @@ export class SpriteLabScene extends Phaser.Scene {
   private zoom(step: number): void {
     this.zoomIndex = Math.max(0, Math.min(ZOOMS.length - 1, this.zoomIndex + step));
     write(this.zoomValue, `${ZOOMS[this.zoomIndex]}px`);
+    this.layout();
+  }
+
+  private toggleArena(): void {
+    this.showArena = !this.showArena;
+    write(this.arenaValue, this.showArena ? 'on' : 'off');
     this.layout();
   }
 
@@ -163,17 +206,24 @@ export class SpriteLabScene extends Phaser.Scene {
   private layout(): void {
     for (const object of this.drawn) object.destroy();
     this.drawn = [];
+    this.striders = [];
 
     const backdrop = BACKDROPS[this.backdropIndex];
     this.cameras.main.setBackgroundColor(backdrop.css);
+    const top = this.screen.head.getBoundingClientRect().height + 40;
+
+    if (this.showArena) {
+      this.layoutArena(top);
+      return;
+    }
 
     const size = ZOOMS[this.zoomIndex];
-    const gap = Math.max(6, Math.round(size * 0.14));
-    const rowHeight = size + gap + 22;
-    const top = this.screen.head.getBoundingClientRect().height + 40;
+    const gap = Math.max(4, Math.round(size * 0.08));
+    const rowHeight = size + 22;
 
     TEAM_LIST.forEach((team, row) => {
       const y = top + row * rowHeight + size / 2;
+      const kit = kitTexture(team.code);
 
       this.keep(
         this.add
@@ -191,23 +241,53 @@ export class SpriteLabScene extends Phaser.Scene {
         this.keep(this.add.rectangle(20 + i * 18, y + 12, 14, 14, colorToInt(hex)));
       });
 
+      // Eight headings, skating.
       let x = LABEL_WIDTH;
       for (let d = 0; d < DIRECTIONS; d++) {
         const facing = (d / DIRECTIONS) * Math.PI * 2;
-        this.place(spriteFor('skater', team.code, facing), x, y, size);
+        const image = this.place(kit, skaterFrame('stride0', facing), x, y, size);
+        this.striders.push({ image, texture: kit, facing });
         x += size + gap;
       }
 
-      // A clear break, so the goalie is obviously not a ninth heading.
+      // The one-off poses, all facing the same way so they compare.
       x += gap * 3;
-      this.place(spriteFor('goalie', team.code, 0), x, y, size);
-      x += size + gap * 3;
-      this.place('dfhl:puck', x, y, size);
+      for (const pose of ONE_OFFS) {
+        this.place(kit, skaterFrame(pose, 0), x, y, size);
+        x += size + gap;
+      }
+
+      // A clear break, so the goalie is obviously not another skater pose.
+      x += gap * 3;
+      for (const pose of GOALIE) {
+        this.place(kit, goalieFrame(pose, Math.PI), x, y, size);
+        x += size + gap;
+      }
+
+      x += gap * 3;
+      this.keep(this.add.image(x, y, netTexture(team.code), 'net').setOrigin(0, 0.5).setScale(size / 56));
+      x += size * 0.8;
+      this.keep(this.add.image(x, y, PUCK_TEXTURE, 'p:0').setOrigin(0, 0.5).setScale(size / 56));
     });
   }
 
-  private place(texture: string, x: number, y: number, size: number): void {
-    this.keep(this.add.image(x, y, texture).setOrigin(0, 0.5).setDisplaySize(size, size));
+  /** The baked arena for the first two franchises, fitted to the window. */
+  private layoutArena(top: number): void {
+    const [a, b] = TEAM_LIST;
+    const key = bakeArena(this, {
+      home: { color: a.primaryColor, trim: a.secondaryColor, name: a.displayName },
+      away: { color: b.primaryColor, trim: b.secondaryColor, name: b.displayName },
+    });
+    const image = this.add.image(this.scale.width / 2, top, key).setOrigin(0.5, 0);
+    const fit = Math.min((this.scale.width - 40) / image.width, (this.scale.height - top - 90) / image.height);
+    image.setScale(Math.max(0.25, fit));
+    this.keep(image);
+  }
+
+  private place(texture: string, frame: string, x: number, y: number, size: number): Phaser.GameObjects.Image {
+    const image = this.add.image(x, y, texture, frame).setOrigin(0, 0.5).setDisplaySize(size, size);
+    this.keep(image);
+    return image;
   }
 
   private keep(object: Phaser.GameObjects.GameObject): void {

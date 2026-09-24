@@ -49,7 +49,7 @@
 
 import Phaser from 'phaser';
 
-import { RENDER, RINK, TICK_RATE, emptyInput } from '@dfhl/shared';
+import { RENDER, RINK, TICK_RATE, attackingGoalX, defendingGoalX, emptyInput } from '@dfhl/shared';
 import type { GamePhase, PlayerInput, TeamSide } from '@dfhl/shared';
 
 import { audio, playEvents } from '../audio/index.js';
@@ -60,13 +60,58 @@ import type { MatchSession } from '../net/session.js';
 import { PeriodLog } from '../data/periods.js';
 import { colorToInt } from '../data/teams.js';
 import { surname } from '../data/rosters.js';
-import { createRinkTransform, drawRink, type RinkTransform } from '../render/rink.js';
-import { SPRITE_FEET, bakeMatchSprites, spriteFor } from '../render/sprites.js';
+import { ARENA_MARGIN_X, ARENA_MARGIN_Y } from '../render/arena.js';
+import { PX_PER_FOOT } from '../render/figures.js';
+import { PoseTracker } from '../render/poses.js';
+import { LAMP_TEXTURE, bakeArena, createRinkTransform, type RinkTransform } from '../render/rink.js';
+import {
+  NET_ORIGIN_X,
+  NET_ORIGIN_Y,
+  PUCK_TEXTURE,
+  SPRITE_ORIGIN_X,
+  SPRITE_ORIGIN_Y,
+  bakeMatchSprites,
+  goalieFrame,
+  kitTexture,
+  netTexture,
+  puckFrame,
+  skaterFrame,
+} from '../render/sprites.js';
 import { UiScreen, button, div, ensureStyles, inkOn, write } from '../ui/index.js';
 
 const SKATER_RADIUS_FEET = 1.6;
-const GOALIE_RADIUS_FEET = 1.9;
-const PUCK_RADIUS_FEET = 0.5;
+
+/**
+ * Draw order. Bodies are sorted by how far down the ice they stand — nearer the
+ * camera draws later — so in the 3/4 view a skater in front of another overlaps
+ * him rather than the other way round. Everything else sits in fixed bands.
+ */
+const DEPTH_UNDER = 5;
+const DEPTH_BEHIND_NETS = 100;
+const DEPTH_NETS = 200;
+const DEPTH_BODIES = 300;
+const DEPTH_OVERLAY = 1000;
+
+/**
+ * Sort depth for a body standing at (x, y).
+ *
+ * Nearer the camera (larger y) draws later. The nets are the exception to
+ * sorting by y alone: a net stands up off the ice, so in this view it covers
+ * whoever is behind the goal line on its far side — but the goalie in his
+ * crease, a foot or two up-ice, must never disappear into the mesh. So the nets
+ * sit under every body, and only a body behind a goal line and up-screen of the
+ * net drops beneath it.
+ */
+function bodyDepth(x: number, y: number): number {
+  const behindNet = Math.abs(x) > RINK.goalLineX && y < RINK.goalHalfWidth;
+  return (behindNet ? DEPTH_BEHIND_NETS : DEPTH_BODIES) + y;
+}
+
+/** How long the goal lamp stays lit, in milliseconds. */
+const LAMP_MS = 2600;
+
+/** Feet of arena the camera may show beyond the boards. */
+const CAMERA_OVERSCAN_FEET = 7;
 
 /** Vertical room the HUD needs above and below the sheet, in pixels. */
 const HUD_MARGIN_TOP = 110;
@@ -118,11 +163,21 @@ export class MatchScene extends Phaser.Scene {
   private periodLog!: PeriodLog;
   private names = new Map<string, string>();
 
-  private rink!: Phaser.GameObjects.Graphics;
+  private arena: Phaser.GameObjects.Image | null = null;
+  private nets: Phaser.GameObjects.Image[] = [];
+  /** Goal lamps, one behind each net: [left end, right end]. */
+  private lamps: Phaser.GameObjects.Image[] = [];
+  private lampMs = [0, 0];
   private entities!: Phaser.GameObjects.Graphics;
+  /** Marker over your own skater, drawn above every body. */
+  private overlay!: Phaser.GameObjects.Graphics;
   private nameTexts: Phaser.GameObjects.Text[] = [];
   /** Pooled sprite images: skaters, goalies and the puck, reused every frame. */
   private sprites: Phaser.GameObjects.Image[] = [];
+  private poses = new PoseTracker();
+  private frameMs = 0;
+  private puckTravel = 0;
+  private lastPuck: { x: number; y: number } | null = null;
 
   // HUD
   private hud!: HTMLDivElement;
@@ -177,10 +232,29 @@ export class MatchScene extends Phaser.Scene {
         { code: config.home.code, colors: { primary: config.home.config.primaryColor, secondary: config.home.config.secondaryColor } },
         { code: config.away.code, colors: { primary: config.away.config.primaryColor, secondary: config.away.config.secondaryColor } },
       ]);
-    }
+      const arenaKey = bakeArena(this, {
+        home: { color: config.home.config.primaryColor, trim: config.home.config.secondaryColor, name: config.home.config.displayName },
+        away: { color: config.away.config.primaryColor, trim: config.away.config.secondaryColor, name: config.away.config.displayName },
+      });
+      this.arena = this.add.image(0, 0, arenaKey).setOrigin(0, 0).setDepth(0);
 
-    this.rink = this.add.graphics();
-    this.entities = this.add.graphics();
+      // One net per end, in the colours of the side defending it. Drawn as
+      // bodies, not as ice, so a skater behind the net is hidden by it.
+      for (const side of ['home', 'away'] as const) {
+        const code = side === 'home' ? config.home.code : config.away.code;
+        const net = this.add.image(0, 0, netTexture(code), 'net').setOrigin(NET_ORIGIN_X, NET_ORIGIN_Y);
+        net.setFlipX(defendingGoalX(side) < 0);
+        net.setData('goalX', defendingGoalX(side));
+        this.nets.push(net);
+      }
+      for (let i = 0; i < 2; i++) {
+        this.lamps.push(this.add.image(0, 0, LAMP_TEXTURE, 'off').setOrigin(0.5, 1).setDepth(DEPTH_UNDER));
+      }
+    }
+    this.cameras.main.setBackgroundColor('#11141b');
+
+    this.entities = this.add.graphics().setDepth(DEPTH_UNDER);
+    this.overlay = this.add.graphics().setDepth(DEPTH_OVERLAY);
     this.layoutRink();
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layoutRink, this);
 
@@ -238,6 +312,8 @@ export class MatchScene extends Phaser.Scene {
     const cue = playEvents(view.events);
     if (cue.shake > 0) this.addShake(cue.shake);
     if (cue.goalFor !== null) this.flashGoal(cue.goalFor);
+    this.poses.observe(view.events);
+    this.frameMs = delta;
     this.stepFeel(delta);
     this.trackCamera(view, delta);
 
@@ -268,6 +344,13 @@ export class MatchScene extends Phaser.Scene {
       this.flashNode.style.opacity = String(this.goalFlash * 0.42);
       this.flashNode.hidden = this.goalFlash <= 0;
     }
+
+    // The lamp blinks while it is lit, the way the real thing strobes.
+    this.lamps.forEach((lamp, i) => {
+      this.lampMs[i] = Math.max(0, this.lampMs[i] - delta);
+      const lit = this.lampMs[i] > 0 && Math.floor(this.lampMs[i] / 220) % 2 === 0;
+      lamp.setFrame(lit ? 'on' : 'off');
+    });
   }
 
   /**
@@ -306,8 +389,10 @@ export class MatchScene extends Phaser.Scene {
     const halfH = camera.height / 2;
     const ppf = t.pixelsPerFoot;
     // A little past the boards, so the rink edge is not welded to the screen edge.
-    const marginX = RINK.halfLength * ppf + 8 - halfW;
-    const marginY = RINK.halfWidth * ppf + 8 - halfH;
+    // Past the boards far enough to see the glass and the first rows of fans,
+    // which frames the ice — but never so far that the rink edge is lost.
+    const marginX = (RINK.halfLength + CAMERA_OVERSCAN_FEET) * ppf - halfW;
+    const marginY = (RINK.halfWidth + CAMERA_OVERSCAN_FEET) * ppf - halfH;
 
     // When the whole sheet already fits on an axis, centre it instead of clamping
     // to a range that has inverted.
@@ -340,6 +425,10 @@ export class MatchScene extends Phaser.Scene {
     this.flashNode.style.background = `radial-gradient(circle at 50% 50%, ${color} 0%, transparent 72%)`;
     this.flashNode.hidden = false;
     this.goalFlash = 1;
+
+    // Light the lamp behind the net the goal went into.
+    const lampIndex = attackingGoalX(side) < 0 ? 0 : 1;
+    if (this.lamps[lampIndex] !== undefined) this.lampMs[lampIndex] = LAMP_MS;
   }
 
   private teardown(): void {
@@ -408,18 +497,22 @@ export class MatchScene extends Phaser.Scene {
 
     // World origin = centre ice. The camera does the rest.
     this.transform = createRinkTransform(0, 0, pixelsPerFoot);
+    const t = this.transform;
 
-    const config = this.session.config;
-    drawRink(
-      this.rink,
-      this.transform,
-      config === null
-        ? undefined
-        : {
-            home: colorToInt(config.home.config.primaryColor),
-            away: colorToInt(config.away.config.primaryColor),
-          },
-    );
+    // Every baked texture is authored at PX_PER_FOOT, so one scale fits all.
+    const scale = pixelsPerFoot / PX_PER_FOOT;
+    this.arena
+      ?.setPosition(t.toScreenX(-RINK.halfLength - ARENA_MARGIN_X), t.toScreenY(-RINK.halfWidth - ARENA_MARGIN_Y))
+      .setScale(scale);
+    for (const net of this.nets) {
+      const goalX = net.getData('goalX') as number;
+      net.setPosition(t.toScreenX(goalX), t.toScreenY(0)).setScale(scale).setDepth(DEPTH_NETS);
+    }
+    // Lamps on the end glass, straight behind each net.
+    this.lamps.forEach((lamp, i) => {
+      const x = (i === 0 ? -1 : 1) * (RINK.halfLength + 1.3);
+      lamp.setPosition(t.toScreenX(x), t.toScreenY(-1)).setScale(scale);
+    });
   }
 
   /** Team code for a side, which is what the baked textures are keyed on. */
@@ -440,8 +533,12 @@ export class MatchScene extends Phaser.Scene {
   private drawEntities(view: RenderView): void {
     const t = this.transform;
     const ppf = t.pixelsPerFoot;
+    const scale = ppf / PX_PER_FOOT;
     const g = this.entities;
+    const overlay = this.overlay;
+    const deltaMs = this.frameMs;
     g.clear();
+    overlay.clear();
 
     // Reuse the name labels; allocating Text objects every frame is the classic
     // way to make a Phaser scene stutter after a minute of play.
@@ -456,7 +553,8 @@ export class MatchScene extends Phaser.Scene {
             stroke: '#0a0d14',
             strokeThickness: 3,
           })
-          .setOrigin(0.5, 0);
+          .setOrigin(0.5, 1)
+          .setDepth(DEPTH_OVERLAY + 1);
         this.nameTexts.push(node);
       }
       node.setText(text).setPosition(x, y).setColor(color).setVisible(true);
@@ -464,38 +562,53 @@ export class MatchScene extends Phaser.Scene {
     };
 
     /*
-     * Sprites are pooled Images, positioned each frame; the Graphics layer is
+     * Sprites are pooled Images, positioned each frame; the Graphics layers are
      * kept only for the things that are genuinely not sprites — the heat glow,
-     * the control rings. Allocating either per frame is the classic way to make
+     * the control marker. Allocating either per frame is the classic way to make
      * a Phaser scene stutter a minute into a match.
+     *
+     * Depth is the world y of the body's feet: in the 3/4 view whoever stands
+     * nearer the camera is drawn over whoever stands behind.
      */
-    const spriteSize = SPRITE_FEET * ppf;
     let spriteIndex = 0;
-    const place = (texture: string, x: number, y: number, alpha: number): void => {
+    const place = (
+      texture: string,
+      frame: string,
+      worldX: number,
+      worldY: number,
+      originX: number,
+      originY: number,
+    ): Phaser.GameObjects.Image => {
       let image = this.sprites[spriteIndex];
       if (image === undefined) {
-        image = this.add.image(0, 0, texture).setOrigin(0.5);
+        image = this.add.image(0, 0, texture, frame);
         this.sprites.push(image);
       }
       image
-        .setTexture(texture)
-        .setPosition(x, y)
-        .setDisplaySize(spriteSize, spriteSize)
-        .setAlpha(alpha)
+        .setTexture(texture, frame)
+        .setOrigin(originX, originY)
+        .setPosition(t.toScreenX(worldX), t.toScreenY(worldY))
+        .setScale(scale)
+        .setDepth(bodyDepth(worldX, worldY))
         .setVisible(true);
       spriteIndex++;
+      return image;
     };
 
     for (const goalie of view.goalies) {
+      const pose = this.poses.goalie(goalie.id, goalie, deltaMs);
       place(
-        spriteFor('goalie', this.sideCode(goalie.side), goalie.facing),
-        t.toScreenX(goalie.x),
-        t.toScreenY(goalie.y),
-        1,
+        kitTexture(this.sideCode(goalie.side)),
+        goalieFrame(pose, goalie.facing),
+        goalie.x,
+        goalie.y,
+        SPRITE_ORIGIN_X,
+        SPRITE_ORIGIN_Y,
       );
     }
 
     const selfPredicted = this.session.self();
+    const bob = Math.sin(this.time.now / 160) * 2;
 
     for (const skater of view.skaters) {
       if (!skater.onIce) continue;
@@ -507,38 +620,57 @@ export class MatchScene extends Phaser.Scene {
       const facing = isSelf ? selfPredicted.facing : skater.facing;
       const stunned = (isSelf ? selfPredicted.stun : skater.stun) > 0;
       const onFire = isSelf ? selfPredicted.onFire : skater.onFire;
+      const windup = isSelf ? selfPredicted.windup : skater.windup;
+      const turbo = isSelf ? selfPredicted.turbo : skater.turbo;
 
       const sx = t.toScreenX(x);
       const sy = t.toScreenY(y);
       const r = SKATER_RADIUS_FEET * ppf;
 
-      // Under the sprite: heat, then the ring saying who is a person. Drawn on
-      // the Graphics layer so they sit beneath the art rather than over it.
+      // Under the skates: heat, then a ring in the team's colour saying who is
+      // a person. Flattened into an ellipse, because it lies on the ice.
       if (onFire) {
-        g.fillStyle(0xff7a1a, 0.3).fillCircle(sx, sy, r * 2.1);
-        g.fillStyle(0xffd166, 0.22).fillCircle(sx, sy, r * 1.4);
+        g.fillStyle(0xff7a1a, 0.3).fillEllipse(sx, sy, r * 4.2, r * 2.2);
+        g.fillStyle(0xffd166, 0.25).fillEllipse(sx, sy, r * 2.8, r * 1.5);
       }
-      if (isSelf) g.lineStyle(3, 0xffffff, 0.95).strokeCircle(sx, sy, r + 4);
-      else if (skater.controlledBy !== null) {
-        g.lineStyle(2, 0xffffff, 0.45).strokeCircle(sx, sy, r + 3);
+      if (isSelf) {
+        g.lineStyle(3, 0x0a0d14, 0.6).strokeEllipse(sx, sy + 1, r * 2.9, r * 1.6);
+        g.lineStyle(2.5, this.sideColor(skater.side), 1).strokeEllipse(sx, sy, r * 2.9, r * 1.6);
+      } else if (skater.controlledBy !== null) {
+        g.lineStyle(2, this.sideColor(skater.side), 0.55).strokeEllipse(sx, sy, r * 2.6, r * 1.4);
       }
 
-      // A knocked-down skater fades rather than vanishing, so you can still see
-      // where the body you have to skate around actually is.
-      place(spriteFor('skater', this.sideCode(skater.side), facing), sx, sy, stunned ? 0.5 : 1);
+      const pose = this.poses.skater(skater.id, { x, y, windup, stunned }, deltaMs);
+      place(
+        kitTexture(this.sideCode(skater.side)),
+        skaterFrame(pose, facing),
+        x,
+        y,
+        SPRITE_ORIGIN_X,
+        SPRITE_ORIGIN_Y,
+      );
 
       /*
-       * Only your own skater gets a name.
+       * Only your own skater gets a marker and a name.
        *
        * Labelling all six put five names in an overlapping pile at centre ice —
        * seen on a real screenshot, where the names were bigger than the men
-       * wearing them and hid the puck between them. NHL '94 put no names on the
-       * ice at all. The one thing you need is which of the three is yours, and
-       * the white ring already says it; the name only confirms it.
+       * wearing them and hid the puck between them. The arrow says which of the
+       * three is yours; the name only confirms it; the bar is your turbo.
        */
       if (isSelf) {
+        const headY = sy - (stunned ? 1.5 : 6.6) * ppf + bob;
+        const w = Math.max(6, ppf * 0.9);
+        overlay.fillStyle(0x0a0d14, 0.85).fillTriangle(sx - w - 2, headY - w - 2, sx + w + 2, headY - w - 2, sx, headY + 2);
+        overlay.fillStyle(0xffffff, 1).fillTriangle(sx - w, headY - w, sx + w, headY - w, sx, headY - 1);
+
+        const barW = r * 2.4;
+        const barY = sy + r * 0.9 + 3;
+        overlay.fillStyle(0x0a0d14, 0.7).fillRect(sx - barW / 2 - 1, barY - 1, barW + 2, 5);
+        overlay.fillStyle(turbo > 0.12 ? 0x4fd1ff : 0x6b7385, 1).fillRect(sx - barW / 2, barY, barW * turbo, 3);
+
         const name = this.names.get(skater.playerId);
-        if (name !== undefined) label(name, sx, sy + r + 8, '#ffffff');
+        if (name !== undefined) label(name, sx, headY - w - 4, '#ffffff');
       }
     }
 
@@ -557,17 +689,24 @@ export class MatchScene extends Phaser.Scene {
      */
     const carried = this.session.carriedPuck();
     const puck = carried ?? view.puck;
-    place(
-      'dfhl:puck',
-      t.toScreenX(puck.x),
-      t.toScreenY(puck.y),
-      1,
+    if (this.lastPuck !== null) {
+      const moved = Math.hypot(puck.x - this.lastPuck.x, puck.y - this.lastPuck.y);
+      if (moved < 10) this.puckTravel += moved;
+    }
+    this.lastPuck = { x: puck.x, y: puck.y };
+    // Over every body, not sorted among them. In the 3/4 view a skater carrying
+    // the puck up the ice holds it on the far side of himself, where honest
+    // depth sorting hides it behind his own sweater — and the one thing an
+    // arcade hockey game can never do is lose the puck.
+    place(PUCK_TEXTURE, puckFrame(Math.floor(this.puckTravel / 1.5)), puck.x, puck.y, 0.5, 0.5).setDepth(
+      DEPTH_OVERLAY - 1,
     );
 
     // Retire any sprite the frame did not use, rather than leaving a ghost
     // skater standing where somebody was two shifts ago.
     for (let i = spriteIndex; i < this.sprites.length; i++) this.sprites[i].setVisible(false);
   }
+
 
   /**
    * Surname only — a full name does not fit under a 1.6 ft circle.

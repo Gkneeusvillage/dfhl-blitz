@@ -108,6 +108,8 @@ export interface RenderSkater {
   turbo: number;
   stun: number;
   onFire: boolean;
+  /** Ticks the shoot button has been held — the renderer's windup pose. */
+  windup: number;
   /** Seat id driving this skater, or null when the AI has it. */
   controlledBy: string | null;
 }
@@ -119,6 +121,8 @@ export interface RenderGoalie {
   x: number;
   y: number;
   facing: number;
+  /** Ticks left in a save lunge; above zero the goalie is going down. */
+  lunge: number;
 }
 
 export interface RenderView {
@@ -356,6 +360,7 @@ export class SnapshotInterpolator {
           turbo: a.turbo,
           stun: a.stun,
           onFire: a.onFire,
+          windup: a.windup,
           controlledBy: a.controlledBy,
         };
         this.view.skaters[i] = entry;
@@ -369,6 +374,7 @@ export class SnapshotInterpolator {
       entry.turbo = a.turbo;
       entry.stun = a.stun;
       entry.onFire = a.onFire;
+      entry.windup = a.windup;
       entry.controlledBy = a.controlledBy;
 
       if (b !== null) {
@@ -396,13 +402,22 @@ export class SnapshotInterpolator {
 
       let entry = this.view.goalies[i];
       if (entry === undefined) {
-        entry = { id: a.id, side: a.side, playerId: a.playerId, x: a.x, y: a.y, facing: a.facing };
+        entry = {
+          id: a.id,
+          side: a.side,
+          playerId: a.playerId,
+          x: a.x,
+          y: a.y,
+          facing: a.facing,
+          lunge: a.lunge,
+        };
         this.view.goalies[i] = entry;
       }
 
       entry.id = a.id;
       entry.side = a.side;
       entry.playerId = a.playerId;
+      entry.lunge = a.lunge;
 
       if (b !== null) {
         entry.x = a.x + (b.x - a.x) * alpha;
