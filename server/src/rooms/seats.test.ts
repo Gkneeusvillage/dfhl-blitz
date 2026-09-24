@@ -217,12 +217,12 @@ describe('projections', () => {
     });
   });
 
-  it('gives the simulation exactly the four fields a Seat has', () => {
+  it('gives the simulation exactly the fields a Seat has', () => {
     const table = seatRoom(2);
     setSeatConnected(table, 's1', false);
     expect(toSimSeats(table)).toEqual([
-      { id: 's0', side: 'home', nickname: 'P0', connected: true },
-      { id: 's1', side: 'away', nickname: 'P1', connected: false },
+      { id: 's0', side: 'home', nickname: 'P0', connected: true, switchHeld: false },
+      { id: 's1', side: 'away', nickname: 'P1', connected: false, switchHeld: false },
     ]);
   });
 

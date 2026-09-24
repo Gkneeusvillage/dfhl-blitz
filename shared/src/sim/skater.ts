@@ -3,18 +3,22 @@
  * recovery from a check.
  *
  * Feel note: a skater accelerates along the direction they are *facing*, and the
- * facing turns toward the stick input at SKATER.turnRate. That one choice is
- * what makes carving around a defender feel like skating rather than like a
- * twin-stick shooter.
+ * facing turns toward the stick input. That choice is what makes carving around
+ * a defender feel like skating rather than like a twin-stick shooter.
+ *
+ * A skater a person is driving handles more sharply (`HANDLING` in tuning.ts,
+ * which says why it is not everyone): quicker turns from a standstill, edge grip
+ * that swings existing momentum round with the facing, a hockey stop when the
+ * stick is pulled back against the direction of travel, and a harder push-off.
  */
 
-import { CHECKING, ON_FIRE, SKATER, lerpAttr } from '../tuning.js';
+import { CHECKING, HANDLING, ON_FIRE, SKATER, lerpAttr } from '../tuning.js';
 import { clamp, turnToward } from '../rink.js';
 import { dequantizeAxis } from '../types.js';
 import type { PlayerInput, SkaterSimState } from '../types.js';
 import type { SimContext } from './context.js';
 import { skaterAttrs } from './context.js';
-import { applyFriction, clampSpeed, integrate } from './physics.js';
+import { applyFriction, clampSpeed, integrate, speedOf } from './physics.js';
 
 /**
  * Dead zone below which a quantized stick reads as no input at all.
@@ -121,12 +125,41 @@ export function driveSkater(ctx: SimContext, skater: SkaterSimState, input: Play
   }
 
   const desired = Math.atan2(stick.y, stick.x);
-  skater.facing = turnToward(skater.facing, desired, SKATER.turnRate);
+  const maxSpeed = maxSpeedOf(ctx, skater, boosting);
+  let accel = accelOf(ctx, skater, boosting) * stick.magnitude;
 
-  const accel = accelOf(ctx, skater, boosting) * stick.magnitude;
+  if (skater.controlledBy === null) {
+    skater.facing = turnToward(skater.facing, desired, SKATER.turnRate);
+  } else {
+    const speed = speedOf(skater);
+    const pace = clamp(speed / maxSpeed, 0, 1);
+    const turnRate = HANDLING.turnRateSlow + (HANDLING.turnRateFast - HANDLING.turnRateSlow) * pace;
+    skater.facing = turnToward(skater.facing, desired, turnRate);
+
+    // Hockey stop: the stick is pulled back against the way we are going. Dig in
+    // rather than accelerate; the turn above keeps coming round meanwhile, so the
+    // skater is already facing the new way when they push off.
+    if (speed > HANDLING.stopMinSpeed) {
+      const along = (skater.vx * stick.x + skater.vy * stick.y) / (speed * stick.magnitude);
+      if (along < HANDLING.stopAngleCos) {
+        applyFriction(skater, HANDLING.stopFriction);
+        return;
+      }
+    }
+    accel *= HANDLING.accelMultiplier;
+  }
+
   skater.vx += Math.cos(skater.facing) * accel;
   skater.vy += Math.sin(skater.facing) * accel;
-  clampSpeed(skater, maxSpeedOf(ctx, skater, boosting));
+
+  if (skater.controlledBy !== null) {
+    // Edge grip: swing part of the existing momentum onto the new heading.
+    const carried = speedOf(skater);
+    skater.vx += (Math.cos(skater.facing) * carried - skater.vx) * HANDLING.grip;
+    skater.vy += (Math.sin(skater.facing) * carried - skater.vy) * HANDLING.grip;
+  }
+
+  clampSpeed(skater, maxSpeed);
 }
 
 /** Advance a skater's position. Collision resolution is the caller's job. */

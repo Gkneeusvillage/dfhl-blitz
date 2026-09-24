@@ -1,6 +1,6 @@
 {
   "name": "dfhl-blitz",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "DFHL Blitz - online 3-on-3 arcade hockey for the DFHL fantasy league",

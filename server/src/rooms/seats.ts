@@ -197,5 +197,6 @@ export function toSimSeats(table: SeatTable): Seat[] {
     side: seat.side,
     nickname: seat.nickname,
     connected: seat.connected,
+    switchHeld: false,
   }));
 }

@@ -27,10 +27,16 @@ if something feels wrong.
 | --- | --- | --- |
 | Skate | Left stick or D-pad | `WASD` / arrows |
 | Shoot (hold to wind up) | `A` / Cross | `Space`, `K` |
-| Pass / body check | `B` / Circle | `J`, `,` |
+| Pass / body check | `B` / Circle | `J`, `/` |
 | Turbo | `RB` / `R1` / `RT` | `Shift`, `L` |
-| Switch skater | `X` / Square | `Q`, `.` |
+| Switch skater | `X` / Square | `Q`, `,` |
 | Menu | `Start` | `Esc` |
+
+**Who you control.** You keep the same skater until you press **Switch**, which
+moves you to the teammate nearest the puck. The one exception: when your team
+has the puck, you always control the skater carrying it, so catching a pass
+hands you the receiver. Your skater also handles more sharply than the AI
+skaters: tighter turns, and pulling the stick back makes a hockey stop.
 
 ### Pairing a controller on Windows
 

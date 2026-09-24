@@ -642,7 +642,12 @@ export class MatchRoom extends Room {
   private syncSimSeats(): void {
     const runner = this.runner;
     if (runner === null) return;
-    runner.state.seats = toSimSeats(this.table).filter((seat) => runner.seatIds.has(seat.id));
+    // A seat's switch latch is simulation state, so it survives a resync: a
+    // button held through somebody else's reconnect must not read as a new press.
+    const held = new Map(runner.state.seats.map((seat) => [seat.id, seat.switchHeld]));
+    runner.state.seats = toSimSeats(this.table)
+      .filter((seat) => runner.seatIds.has(seat.id))
+      .map((seat) => ({ ...seat, switchHeld: held.get(seat.id) ?? false }));
   }
 
   private releaseSeatAndAnnounce(seatId: string): void {

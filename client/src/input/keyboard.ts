@@ -101,8 +101,8 @@ export class KeyboardInputSource implements InputSource {
     input.moveY = quantizeAxis(y);
     // Level-triggered, not edge-triggered, and that is the contract the
     // simulation is written against: `windup` counts the ticks `shoot` has been
-    // held, and `switchPlayer` picks the second-nearest skater while held rather
-    // than cycling on a press (see the header of `sim/control.ts`).
+    // held, and the simulation finds the press of `switchPlayer` itself by
+    // latching last tick's level on the seat (see the header of `sim/control.ts`).
     input.shoot = this.held('shoot');
     input.pass = this.held('pass');
     input.turbo = this.held('turbo');
