@@ -747,12 +747,17 @@ describe('a goalie keeps the game running', () => {
 // ---------------------------------------------------------------------------
 
 describe('a seat drives the right skater', () => {
-  function seated(switchPlayer: boolean): {
+  interface Seated {
     state: GameSimState;
+    config: MatchConfig;
     near: SkaterSimState;
     middle: SkaterSimState;
     far: SkaterSimState;
-  } {
+    /** Run one control pass with the switch button up or down. */
+    step(switchPlayer: boolean): void;
+  }
+
+  function seated(): Seated {
     const { config, state } = liveState();
     state.seats.push({ id: 'seat', side: 'home', nickname: 'seat', connected: true });
     state.puck.carrierId = null;
@@ -766,25 +771,55 @@ describe('a seat drives the right skater', () => {
     placeInOpenIce(middle, 18, 0);
     placeInOpenIce(far, 40, 0);
 
-    const inputs = { seat: stick(0, 0, { switchPlayer }) };
-    assignControl({ state, config, inputs, rng: new Rng(state.rng), events: [] });
-    return { state, near, middle, far };
+    const step = (switchPlayer: boolean): void => {
+      const inputs = { seat: stick(0, 0, { switchPlayer }) };
+      assignControl({ state, config, inputs, rng: new Rng(state.rng), events: [] });
+    };
+    return { state, config, near, middle, far, step };
   }
 
-  it('takes the skater nearest the puck', () => {
-    // NHL '94 rules, and the reason `aiInput` must not elect its chaser the same
-    // way. Driving the FARTHEST candidate instead used to pass the whole suite.
-    const { near, middle, far } = seated(false);
+  it('takes the skater nearest the puck when it has nobody', () => {
+    const { near, middle, far, step } = seated();
+    step(false);
     expect(near.controlledBy).toBe('seat');
     expect(middle.controlledBy).toBeNull();
     expect(far.controlledBy).toBeNull();
   });
 
-  it('takes the second nearest while the switch button is held', () => {
-    const { near, middle, far } = seated(true);
+  it('keeps its skater when a teammate gets nearer the puck', () => {
+    // The auto-switch this replaced took the skater away the moment anyone else
+    // was nearer. Control now moves only when the player asks for it.
+    const { far, near, step } = seated();
+    far.controlledBy = 'seat';
+    step(false);
+    expect(far.controlledBy).toBe('seat');
+    expect(near.controlledBy).toBeNull();
+  });
+
+  it('moves to the nearest other teammate on a press of switch', () => {
+    const { near, middle, far, step } = seated();
+    step(false);
+    expect(near.controlledBy).toBe('seat');
+
+    step(true);
     expect(middle.controlledBy).toBe('seat');
     expect(near.controlledBy).toBeNull();
     expect(far.controlledBy).toBeNull();
+  });
+
+  it('switches once per press, however long the button is held', () => {
+    // The server repeats a seat's last input when a packet is late, so a held
+    // button arrives as many identical ticks. Only the first one is a press.
+    const { near, middle, step } = seated();
+    step(false);
+    step(true);
+    expect(middle.controlledBy).toBe('seat');
+    for (let i = 0; i < 30; i++) step(true);
+    expect(middle.controlledBy).toBe('seat');
+
+    step(false);
+    step(true);
+    expect(near.controlledBy).toBe('seat');
   });
 
   it('takes the carrier over anyone standing closer to the puck', () => {
@@ -796,6 +831,7 @@ describe('a seat drives the right skater', () => {
     const carrier = skaterOf(state, 'home-0');
     placeInOpenIce(near, 6, 0);
     placeInOpenIce(carrier, 40, 0);
+    near.controlledBy = 'seat';
     state.puck.carrierId = carrier.id;
     state.puck.x = 0;
     state.puck.y = 0;
@@ -806,85 +842,70 @@ describe('a seat drives the right skater', () => {
     expect(near.controlledBy).toBeNull();
   });
 
-  it('keeps the skater it already has unless the challenger is clearly nearer', () => {
-    /*
-     * Straight nearest-wins flipped the seat-to-skater binding 46 times per 1,000
-     * ticks in a measured run with a stick held one way. `CONTROL.switchMarginFeet`
-     * is what makes control something a player can rely on. Both halves matter, so
-     * both are asserted: a challenger inside the margin does not take over, and
-     * one outside it does.
-     */
-    const setUp = (challengerX: number): { incumbent: SkaterSimState; challenger: SkaterSimState } => {
-      const { config, state } = liveState();
-      state.seats.push({ id: 'seat', side: 'home', nickname: 'seat', connected: true });
-      state.puck.carrierId = null;
-      state.puck.x = 0;
-      state.puck.y = 0;
-      // Fast enough that this is the play rather than a retrieval, so the chaser
-      // reservation is not what is being measured here.
-      state.puck.vx = 1;
+  it('keeps its skater when the other side has the puck', () => {
+    const { config, state } = liveState();
+    state.seats.push({ id: 'seat', side: 'home', nickname: 'seat', connected: true });
 
-      const incumbent = skaterOf(state, 'home-0');
-      const challenger = skaterOf(state, 'home-1');
-      const spare = skaterOf(state, 'home-2');
-      placeInOpenIce(incumbent, 20, 0);
-      placeInOpenIce(challenger, challengerX, 0);
-      placeInOpenIce(spare, 60, 0);
-      incumbent.controlledBy = 'seat';
+    const mine = skaterOf(state, 'home-0');
+    const near = skaterOf(state, 'home-1');
+    const opponent = skaterOf(state, 'away-0');
+    placeInOpenIce(mine, 40, 0);
+    placeInOpenIce(near, 4, 0);
+    placeInOpenIce(opponent, 0, 0);
+    mine.controlledBy = 'seat';
+    state.puck.carrierId = opponent.id;
+    state.puck.x = 0;
+    state.puck.y = 0;
 
-      assignControl({ state, config, inputs: {}, rng: new Rng(state.rng), events: [] });
-      return { incumbent, challenger };
-    };
+    assignControl({ state, config, inputs: {}, rng: new Rng(state.rng), events: [] });
 
-    const inside = setUp(19);
-    expect(inside.incumbent.controlledBy).toBe('seat');
-    expect(inside.challenger.controlledBy).toBeNull();
+    expect(mine.controlledBy).toBe('seat');
+    expect(near.controlledBy).toBeNull();
+  });
+});
 
-    const outside = setUp(20 - PUCK.pickupRadius - 1);
-    expect(outside.challenger.controlledBy).toBe('seat');
-    expect(outside.incumbent.controlledBy).toBeNull();
+// ---------------------------------------------------------------------------
+// Handling
+// ---------------------------------------------------------------------------
+
+describe('the skater a person drives handles sharply', () => {
+  /** Ticks for a skater at full speed along +x to be skating back along -x. */
+  function ticksToReverse(driven: boolean): number {
+    const { state, ctx } = liveState();
+    const skater = skaterOf(state, 'home-0');
+    placeInOpenIce(skater, 0, 0);
+    skater.controlledBy = driven ? 'seat' : null;
+
+    for (let i = 0; i < 120; i++) driveSkater(ctx, skater, stick(1, 0));
+    expect(skater.vx).toBeGreaterThan(0.3);
+
+    for (let tick = 1; tick <= 300; tick++) {
+      driveSkater(ctx, skater, stick(-1, 0));
+      moveSkater(skater);
+      if (skater.vx < -0.15) return tick;
+    }
+    return Infinity;
+  }
+
+  it('turns round from full speed much sooner than the AI does', () => {
+    // The v0.1 model, which the AI still uses: momentum never turns, so a
+    // reversal is a long drift before the new acceleration wins.
+    const ai = ticksToReverse(false);
+    const driven = ticksToReverse(true);
+    expect(driven).toBeLessThan(ai * 0.7);
+    // Under half a second, at 60 ticks a second.
+    expect(driven).toBeLessThan(TICK_RATE / 2);
   });
 
-  it('cannot take over the teammate the AI has sent after a dead puck', () => {
-    /*
-     * The blocker this rule exists for. With a seat a side and a stick held one
-     * way, `assignControl` handed the seat whichever teammate had just got
-     * closest to a dead puck, the held stick dragged them off it, `electChaser`
-     * re-elected from the rest, and the new chaser was hijacked in turn: measured,
-     * a loose puck motionless at one spot for 9,217 consecutive ticks — 153.6 s of
-     * a 180 s period.
-     *
-     * The reservation is only for a puck sitting still. A loose puck still
-     * travelling is the play, and a seat has to be able to follow it.
-     */
-    const bind = (puckSpeed: number): { chaser: SkaterSimState; other: SkaterSimState } => {
-      const { config, state } = liveState();
-      state.seats.push({ id: 'seat', side: 'home', nickname: 'seat', connected: true });
-      state.puck.carrierId = null;
-      state.puck.x = 0;
-      state.puck.y = 0;
-      state.puck.vx = puckSpeed;
-
-      const chaser = skaterOf(state, 'home-1');
-      const other = skaterOf(state, 'home-2');
-      const held = skaterOf(state, 'home-0');
-      placeInOpenIce(chaser, 8, 0);
-      placeInOpenIce(other, 30, 0);
-      placeInOpenIce(held, 50, 0);
-      // Last tick's binding: the seat is driving the far skater and the AI owns
-      // the two nearer ones, so the nearest of those is its elected chaser.
-      held.controlledBy = 'seat';
-
-      assignControl({ state, config, inputs: {}, rng: new Rng(state.rng), events: [] });
-      return { chaser, other };
-    };
-
-    const dead = bind(0);
-    expect(dead.chaser.controlledBy).toBeNull();
-    // The seat is not punished for it — it still gets the better of what is left.
-    expect(dead.other.controlledBy).toBe('seat');
-
-    const live = bind(1.5);
-    expect(live.chaser.controlledBy).toBe('seat');
+  it('carves a turn instead of sliding sideways', () => {
+    const { state, ctx } = liveState();
+    const skater = skaterOf(state, 'home-0');
+    placeInOpenIce(skater, 0, 0);
+    skater.controlledBy = 'seat';
+    for (let i = 0; i < 120; i++) driveSkater(ctx, skater, stick(1, 0));
+    for (let i = 0; i < 20; i++) driveSkater(ctx, skater, stick(0, 1));
+    // Twenty ticks into a hard right turn, most of the speed goes the new way.
+    expect(skater.vy).toBeGreaterThan(Math.abs(skater.vx));
+    expect(speedOf(skater)).toBeGreaterThan(SKATER.maxSpeedLow * 0.6);
   });
 });

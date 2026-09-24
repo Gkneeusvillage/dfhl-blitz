@@ -275,7 +275,7 @@ export class MatchScene extends Phaser.Scene {
    *
    * Follows the puck rather than the player, because the puck is what everyone on
    * both teams is looking at, and a camera that follows your own skater swings
-   * wildly every time control auto-switches to whoever is nearest the puck.
+   * wildly every time control passes to a teammate who has just caught the puck.
    *
    * The lerp is what keeps it watchable: snapping the camera to a puck that
    * changes direction sixty times a second is unusable. The clamp is what keeps

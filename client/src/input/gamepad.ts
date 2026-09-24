@@ -67,7 +67,7 @@ export const GAMEPAD_BINDINGS = {
   /** Pass on offense; poke or body check on defense. */
   pass: { buttons: [1], xbox: 'B', playstation: 'Circle', note: 'pass, or check when chasing' },
   /** Take the other skater. */
-  switchPlayer: { buttons: [2], xbox: 'X', playstation: 'Square', note: 'switch to the other skater' },
+  switchPlayer: { buttons: [2], xbox: 'X', playstation: 'Square', note: 'switch to the teammate nearest the puck' },
   /**
    * Bumper and trigger both, because which one feels like "go" is a matter of
    * taste and neither is needed for anything else.

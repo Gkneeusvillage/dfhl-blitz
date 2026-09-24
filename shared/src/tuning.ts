@@ -85,32 +85,6 @@ export const PUCK = {
   pickupRadius: 2.2,
 } as const;
 
-/**
- * How a seat's control of a skater is allowed to move around.
- *
- * Both numbers exist to stop a held stick direction from stalling the match: see
- * the header of `sim/control.ts` for the failure they close.
- */
-export const CONTROL = {
-  /**
-   * How much nearer the puck a challenger must be before it takes a seat's
-   * skater away, in feet.
-   *
-   * Matched to `PUCK.pickupRadius`, because that is the distance at which being
-   * "closer to the puck" starts to mean anything: inside it you collect the puck,
-   * outside it you are just standing somewhere slightly different.
-   */
-  switchMarginFeet: PUCK.pickupRadius,
-  /**
-   * A loose puck slower than this is a retrieval rather than a play, and the AI's
-   * chaser is off limits to the seats while it lasts.
-   *
-   * Eight times `PUCK.restSpeed` — 0.16 ft/tick, under 10 ft/s. Anything quicker
-   * is still the play and a seat must be free to follow it.
-   */
-  deadPuckSpeed: PUCK.restSpeed * 8,
-} as const;
-
 export const SKATER = {
   radius: 1.6,
   /**
@@ -123,7 +97,7 @@ export const SKATER = {
   accelHigh: 0.034,
   /** Per-tick velocity retention when not accelerating. */
   friction: 0.93,
-  /** How sharply a skater can change heading, radians per tick. */
+  /** How sharply an AI skater can change heading, radians per tick. */
   turnRate: 0.22,
   /** Carrying the puck costs a little speed. */
   carrySpeedFactor: 0.94,
@@ -147,6 +121,43 @@ export const SKATER = {
   boardsRestitution: 0.25,
   /** Velocity retention while knocked down — a fallen skater slides to a stop fast. */
   stunFriction: 0.86,
+} as const;
+
+/**
+ * How the skater under a person's thumb handles.
+ *
+ * AI skaters keep the plain `SKATER` model. Measured over the balance suite's
+ * 85-vs-45 sweep, giving every skater these handling rules took the strong side
+ * from 19 wins in 20 down to 10: quick turns and stops helped the weak roster's
+ * defenders far more than the strong roster's carriers, and even the hockey stop
+ * on its own cost six wins. Scaling the numbers by the `skating` rating did not
+ * bring it back. So this is the arcade answer — the player you drive is the
+ * sharpest skater on the ice — and it is symmetric, because every person gets it.
+ */
+export const HANDLING = {
+  /** Multiplies the skater's own `accelLow..accelHigh` so the first strides bite. */
+  accelMultiplier: 1.3,
+  /**
+   * Turn rate, radians per tick, from standing still to top speed. A skater at
+   * rest pivots almost at once; one in full flight still has to carve.
+   */
+  turnRateSlow: 0.45,
+  turnRateFast: 0.22,
+  /**
+   * Edge grip: the share of velocity swung onto the facing each tick, keeping
+   * speed. Without it old momentum never turns at all — only new acceleration
+   * goes the new way — so every change of direction is a long drift. Applied
+   * only while the stick is pushed; let go and the skater still glides.
+   */
+  grip: 0.15,
+  /**
+   * Hockey stop. Stick pulled back more than `stopAngleCos` (cos 120 deg) against
+   * the direction of travel: dig in and bleed speed at `stopFriction` per tick
+   * instead of accelerating, until below `stopMinSpeed`.
+   */
+  stopFriction: 0.84,
+  stopAngleCos: -0.5,
+  stopMinSpeed: 0.08,
 } as const;
 
 export const CHECKING = {

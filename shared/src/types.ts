@@ -265,6 +265,13 @@ export interface Seat {
   nickname: string;
   /** False when the player has dropped but may still reconnect. */
   connected: boolean;
+  /**
+   * Whether this seat's switch button was down last tick. Switching fires on the
+   * press, not while held, and the server repeats a seat's last input when a
+   * packet is late — so the edge has to be detected here, in simulation state,
+   * where a repeated input reads as "still held" rather than as a second press.
+   */
+  switchHeld?: boolean;
 }
 
 export interface SkaterSimState {
