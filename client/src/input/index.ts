@@ -30,23 +30,33 @@ import type { PlayerInput } from '@dfhl/shared';
 import { GamepadInputSource, movesTheSkater } from './gamepad.js';
 import { KeyboardInputSource } from './keyboard.js';
 import type { InputSource } from './source.js';
+import { TouchInputSource } from './touch.js';
 
 export * from './gamepad.js';
 export * from './keyboard.js';
 export * from './labels.js';
+export * from './touch.js';
 export type { InputSource } from './source.js';
 
-export type InputDeviceKind = 'keyboard' | 'gamepad';
+export type InputDeviceKind = 'keyboard' | 'gamepad' | 'touch';
 
 export interface InputRouterOptions {
   /** Both are injectable so the tests can drive them without real hardware. */
   readonly keyboard?: InputSource;
   readonly gamepad?: GamepadInputSource;
+  readonly touch?: TouchInputSource;
 }
 
 export class InputRouter implements InputSource {
   readonly keyboard: InputSource;
   readonly gamepad: GamepadInputSource;
+  /**
+   * Always built, even on a desktop with no touchscreen. It is pure state with no
+   * listeners of its own, so an unused one costs nothing — and it means the
+   * on-screen controls can be attached at any moment without the router having
+   * to be rebuilt mid-match.
+   */
+  readonly touch: TouchInputSource;
 
   private active: InputDeviceKind = 'keyboard';
   private padWasPresent = false;
@@ -54,17 +64,19 @@ export class InputRouter implements InputSource {
   /** Each device's previous sample, so control is claimed by CHANGE, not by level. */
   private lastKeyboard: PlayerInput | null = null;
   private lastGamepad: PlayerInput | null = null;
+  private lastTouch: PlayerInput | null = null;
 
   constructor(options: InputRouterOptions = {}) {
     this.keyboard = options.keyboard ?? new KeyboardInputSource();
     this.gamepad = options.gamepad ?? new GamepadInputSource();
+    this.touch = options.touch ?? new TouchInputSource();
     // A pad already awake when the match starts is the pad the player means to
     // use; there is no first press to wait for in that case.
     this.padWasPresent = this.gamepad.padPresent;
     if (this.padWasPresent) this.active = 'gamepad';
   }
 
-  /** `'keyboard'` or `'gamepad'` — what a HUD glyph set should key off. */
+  /** `'keyboard'`, `'gamepad'` or `'touch'` — what a HUD glyph set should key off. */
   get id(): string {
     return this.active;
   }
@@ -74,7 +86,9 @@ export class InputRouter implements InputSource {
   }
 
   get connected(): boolean {
-    return this.active === 'gamepad' ? this.gamepad.connected : this.keyboard.connected;
+    if (this.active === 'gamepad') return this.gamepad.connected;
+    if (this.active === 'touch') return this.touch.connected;
+    return this.keyboard.connected;
   }
 
   sample(tick: number): PlayerInput {
@@ -84,10 +98,14 @@ export class InputRouter implements InputSource {
     // router see which device the player just touched.
     const fromKeyboard = this.keyboard.sample(tick);
     const fromGamepad = this.gamepad.sample(tick);
+    const fromTouch = this.touch.sample(tick);
 
     const padPresent = this.gamepad.padPresent;
     if (padPresent && !this.padWasPresent) this.active = 'gamepad';
-    if (!padPresent) this.active = 'keyboard';
+    // Only a pad that WAS driving falls back to the keyboard. Asserting "no pad
+    // means keyboard" unconditionally would take control off a phone's touch
+    // controls on every tick, since a phone never has a pad.
+    if (!padPresent && this.active === 'gamepad') this.active = 'keyboard';
     this.padWasPresent = padPresent;
 
     /*
@@ -108,21 +126,27 @@ export class InputRouter implements InputSource {
      */
     const padTouched = padPresent && changed(this.lastGamepad, fromGamepad);
     const keyboardTouched = changed(this.lastKeyboard, fromKeyboard);
+    const screenTouched = changed(this.lastTouch, fromTouch);
 
     // The pad wins a tie for the reason in the header: both at once is two hands
     // on two devices, which is not a real case.
     if (padTouched) this.active = 'gamepad';
+    else if (screenTouched) this.active = 'touch';
     else if (keyboardTouched) this.active = 'keyboard';
 
     this.lastGamepad = fromGamepad;
     this.lastKeyboard = fromKeyboard;
+    this.lastTouch = fromTouch;
 
-    return this.active === 'gamepad' ? fromGamepad : fromKeyboard;
+    if (this.active === 'gamepad') return fromGamepad;
+    if (this.active === 'touch') return fromTouch;
+    return fromKeyboard;
   }
 
   destroy(): void {
     this.keyboard.destroy();
     this.gamepad.destroy();
+    this.touch.destroy();
   }
 }
 

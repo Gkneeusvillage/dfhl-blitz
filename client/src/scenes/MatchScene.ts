@@ -53,7 +53,7 @@ import { RENDER, RINK, TICK_RATE, attackingGoalX, defendingGoalX, emptyInput } f
 import type { GamePhase, PlayerInput, TeamSide } from '@dfhl/shared';
 
 import { audio, playEvents } from '../audio/index.js';
-import { createInputSource, type InputRouter } from '../input/index.js';
+import { createInputSource, type InputDeviceKind, type InputRouter } from '../input/index.js';
 import type { InputSource } from '../input/source.js';
 import type { RenderView } from '../net/interpolation.js';
 import type { MatchSession } from '../net/session.js';
@@ -77,7 +77,7 @@ import {
   puckFrame,
   skaterFrame,
 } from '../render/sprites.js';
-import { UiScreen, button, div, ensureStyles, inkOn, write } from '../ui/index.js';
+import { TouchControls, UiScreen, button, div, ensureStyles, inkOn, write } from '../ui/index.js';
 
 const SKATER_RADIUS_FEET = 1.6;
 
@@ -116,6 +116,16 @@ const CAMERA_OVERSCAN_FEET = 7;
 /** Vertical room the HUD needs above and below the sheet, in pixels. */
 const HUD_MARGIN_TOP = 110;
 const HUD_MARGIN_BOTTOM = 96;
+
+/**
+ * Window height below which the layout is "compact": a phone held sideways.
+ * Matches the max-height media query in `ui/styles.ts`, which shrinks the
+ * scoreboard at the same point.
+ */
+const COMPACT_HEIGHT_PX = 500;
+
+/** Ice kept clear below the top of a compact screen, where the scoreboard sits. */
+const COMPACT_HUD_INSET_TOP = 44;
 
 /** Standard-mapping Start button — the pad's way into the match menu. */
 const BUTTON_START = 9;
@@ -196,6 +206,13 @@ export class MatchScene extends Phaser.Scene {
   private curtainActions!: HTMLDivElement;
 
   private menu: UiScreen | null = null;
+
+  private touchControls!: TouchControls;
+  /** Whether the on-screen controls should be up; see `pumpTouchControls`. */
+  private touchUi = false;
+  private lastDevice: InputDeviceKind = 'keyboard';
+  /** Extra camera travel past the top boards, so they clear the scoreboard. */
+  private hudInsetTop = 0;
   private startWasDown = false;
   private netVisibleForMs = 0;
   private unsubscribes: Array<() => void> = [];
@@ -267,6 +284,25 @@ export class MatchScene extends Phaser.Scene {
     this.gate = new GatedInput(this.router);
     this.session.useInputSource(this.gate);
 
+    /*
+     * The on-screen controls, built on every device and shown only where they
+     * are wanted. They go in ahead of the curtain so "RECONNECTING" covers them:
+     * a stick you can waggle while the match is not listening is a lie.
+     */
+    this.touchControls = new TouchControls(this.router.touch, {
+      onMenu: () => this.toggleMenu(),
+    });
+    this.hud.insertBefore(this.touchControls.root, this.curtain);
+    this.lastDevice = this.router.activeDevice;
+    // A touchscreen as the PRIMARY pointer is a phone or a tablet. A laptop
+    // that merely has one reports a fine pointer and starts with them hidden.
+    this.touchUi =
+      this.lastDevice !== 'gamepad' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches;
+    this.touchControls.setVisible(this.touchUi);
+    window.addEventListener('pointerdown', this.onAnyPointer, true);
+
     this.unsubscribes.push(
       this.session.connection.on('matchEnd', () => this.go('PostGame')),
       // A lobby that says the match is over without a MatchEnd is an abandoned
@@ -296,10 +332,39 @@ export class MatchScene extends Phaser.Scene {
     this.toggleMenu();
   };
 
+  /**
+   * Any finger on the glass brings the controls up.
+   *
+   * This is the way back for the two cases the boot-time check cannot see: a
+   * touchscreen laptop whose owner reaches for the screen, and a phone whose
+   * paired controller has just been put down.
+   */
+  private readonly onAnyPointer = (event: PointerEvent): void => {
+    if (event.pointerType === 'touch') this.touchUi = true;
+  };
+
+  /**
+   * Show the on-screen controls to whoever is using them, and nobody else.
+   *
+   * Picking up a controller or a keyboard takes them away — sixty square
+   * centimetres of translucent buttons over the rink is a cost worth paying only
+   * for the player whose thumbs are on them. They also step aside for the match
+   * menu, which is a full screen of real buttons of its own.
+   */
+  private pumpTouchControls(): void {
+    const device = this.router.activeDevice;
+    if (device !== this.lastDevice && device !== 'touch') this.touchUi = false;
+    this.lastDevice = device;
+
+    this.touchControls.setVisible(this.touchUi && this.menu === null);
+    this.hud.classList.toggle('dfhl-hud--touch', this.touchUi);
+  }
+
   override update(_time: number, delta: number): void {
     const view = this.session.update(delta);
 
     this.pumpMenuButton();
+    this.pumpTouchControls();
     this.menu?.update(delta);
     this.drawConnection(delta, view === null);
 
@@ -393,11 +458,15 @@ export class MatchScene extends Phaser.Scene {
     // which frames the ice — but never so far that the rink edge is lost.
     const marginX = (RINK.halfLength + CAMERA_OVERSCAN_FEET) * ppf - halfW;
     const marginY = (RINK.halfWidth + CAMERA_OVERSCAN_FEET) * ppf - halfH;
+    // On a compact screen the scoreboard lies over the top of the ice, so the
+    // camera may travel that much further up: a puck on the near boards is then
+    // drawn below the scoreboard instead of underneath it.
+    const topY = -(marginY + this.hudInsetTop);
 
     // When the whole sheet already fits on an axis, centre it instead of clamping
     // to a range that has inverted.
     const centreX = marginX <= 0 ? 0 : clampTo(this.cameraX, -marginX, marginX);
-    const centreY = marginY <= 0 ? 0 : clampTo(this.cameraY, -marginY, marginY);
+    const centreY = topY >= marginY ? (topY + marginY) / 2 : clampTo(this.cameraY, topY, marginY);
 
     let shakeX = 0;
     let shakeY = 0;
@@ -435,6 +504,8 @@ export class MatchScene extends Phaser.Scene {
     for (const off of this.unsubscribes) off();
     this.unsubscribes = [];
     window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('pointerdown', this.onAnyPointer, true);
+    this.touchControls.destroy();
     this.scale.off(Phaser.Scale.Events.RESIZE, this.layoutRink, this);
     this.menu?.destroy();
     this.menu = null;
@@ -490,8 +561,18 @@ export class MatchScene extends Phaser.Scene {
      * rink's height you can no longer see the linemate you are trying to pass to,
      * and a pass to somebody off-screen is worse than a smaller skater.
      */
-    const available = height - HUD_MARGIN_TOP - HUD_MARGIN_BOTTOM;
-    const byWidth = width / RENDER.cameraVisibleFeet;
+    /*
+     * A phone held sideways is about 390 px tall, and reserving 206 of those for
+     * the HUD left 184 for the ice: 4 pixels per foot, a skater 21 px high. So on
+     * a compact screen nothing is reserved — the scoreboard overlays the ice, the
+     * camera is given room to scroll the boards clear of it (see `trackCamera`),
+     * and the view tightens to fewer feet across.
+     */
+    const compact = height < COMPACT_HEIGHT_PX;
+    this.hudInsetTop = compact ? COMPACT_HUD_INSET_TOP : 0;
+    const available = compact ? height : height - HUD_MARGIN_TOP - HUD_MARGIN_BOTTOM;
+    const byWidth =
+      width / (compact ? RENDER.cameraVisibleFeetCompact : RENDER.cameraVisibleFeet);
     const keepVisibleTall = available / MIN_VISIBLE_FEET_TALL;
     const pixelsPerFoot = Math.max(1, Math.min(byWidth, keepVisibleTall));
 
@@ -792,9 +873,26 @@ export class MatchScene extends Phaser.Scene {
     this.curtain.append(this.curtainTitle, this.curtainBody, this.curtainActions);
     this.curtain.hidden = true;
 
+    // Shown by a media query alone; see `.hud__rotate` in the stylesheet.
+    const rotate = div('hud__rotate');
+    const rotateTitle = document.createElement('h2');
+    rotateTitle.textContent = 'TURN YOUR PHONE';
+    rotate.append(
+      rotateTitle,
+      div('dim', 'The rink is wide. Hold the phone sideways to play — the match is still running.'),
+    );
+
     this.hud = div('dfhl-hud');
     // Flash first so it paints under the scoreboard rather than washing it out.
-    this.hud.append(this.flashNode, bar, this.phaseNode, div('hud__spacer'), foot, this.curtain);
+    this.hud.append(
+      this.flashNode,
+      bar,
+      this.phaseNode,
+      div('hud__spacer'),
+      foot,
+      this.curtain,
+      rotate,
+    );
     document.body.append(this.hud);
   }
 

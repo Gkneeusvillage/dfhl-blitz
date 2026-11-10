@@ -601,6 +601,11 @@ export const RENDER = {
   designHeight: 720,
   /** Camera follows the puck; this much rink width stays visible. */
   cameraVisibleFeet: 130,
+  /**
+   * The same, on a screen too short to spare the zoom — a phone held sideways.
+   * Tighter, because 130 ft across a 6-inch screen draws a skater 20 px tall.
+   */
+  cameraVisibleFeetCompact: 105,
   cameraLerp: 0.08,
 } as const;
 

@@ -114,8 +114,12 @@ function fitCanvas(): void {
  * horn on the first goal would never sound. These listeners are `once` and cover
  * every way into the game: a click, a key, or a gamepad button pressed on the
  * title screen.
+ *
+ * `pointerup` and `touchend` are here for iPhones: Safari counts the END of a
+ * touch as the gesture that may start audio, not the start of one, so a
+ * `pointerdown`-only unlock can leave a phone silent for the whole match.
  */
-for (const type of ['pointerdown', 'keydown', 'gamepadconnected'] as const) {
+for (const type of ['pointerdown', 'pointerup', 'touchend', 'keydown', 'gamepadconnected'] as const) {
   window.addEventListener(type, () => audio.unlock(), { once: true });
 }
 

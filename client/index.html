@@ -2,7 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0d14" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>DFHL Blitz</title>
     <style>
       html,
@@ -14,16 +21,25 @@
         color: #e8eef7;
         font-family: 'Segoe UI', system-ui, sans-serif;
         overflow: hidden;
+        /* A page that rubber-bands or pulls-to-refresh under a thumb on the
+           stick is a game that reloads itself mid-rush. */
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
       }
       #game {
         width: 100vw;
         height: 100vh;
+        /* 100vh on a phone is the height with the URL bar HIDDEN, so the bottom
+           of the page sits under the bar. dvh is the height actually visible;
+           the vh line above is the fallback for browsers without it. */
+        height: 100dvh;
         display: flex;
         align-items: center;
         justify-content: center;
       }
       canvas {
         image-rendering: pixelated;
+        touch-action: none;
       }
     </style>
   </head>

@@ -13,3 +13,4 @@ export * from './menuInput.js';
 export * from './screen.js';
 export * from './styles.js';
 export * from './theme.js';
+export * from './touchControls.js';

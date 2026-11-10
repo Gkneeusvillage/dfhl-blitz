@@ -602,4 +602,172 @@ const CSS = `
 .stats__row--head { color: var(--ink-faint); font-size: 0.8em; letter-spacing: 0.06em; text-transform: uppercase; }
 .stats__row--star { background: #1c2740; }
 .stats__num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ phones */
+
+/*
+ * Notches and home indicators.
+ *
+ * With viewport-fit=cover the page runs edge to edge, which is what lets the ice
+ * fill a phone held sideways — and also what puts the Leave button under the
+ * camera cutout. env() is 0 on every screen without one, so this is free on a
+ * desktop.
+ */
+.dfhl, .dfhl-hud {
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Menus scroll vertically and do nothing else: no pinch, no double-tap zoom. */
+.dfhl { touch-action: pan-y; }
+
+@media (pointer: coarse) {
+  /* A fingertip is about 44 px; the desktop buttons are about 30. */
+  .btn { min-height: 44px; }
+  .prow { min-height: 40px; }
+  /* iOS zooms the whole page into any focused field under 16 px and never
+     zooms back out, which leaves the lobby stuck magnified. */
+  .dfhl input[type='text'] { font-size: 16px; }
+}
+
+/* A phone held sideways: ~390 px tall. The scoreboard shrinks and gives the
+   ice back; the match scene tightens its camera at the same threshold. */
+@media (max-height: 500px) {
+  .hud__bar { margin-top: 0.2em; font-size: 0.8em; }
+  .hud__phase { margin-top: 0.15em; font-size: 1.7em; }
+  .hud__foot { padding-bottom: 0.3em; }
+  .hud__youname { font-size: 0.9em; }
+}
+
+/* With thumbs in both bottom corners, the meter moves to the middle. */
+.dfhl-hud--touch .hud__foot { justify-content: center; }
+.dfhl-hud--touch .hud__you { align-items: center; min-width: 0; }
+.dfhl-hud--touch .hud__meter { width: 9em; }
+.dfhl-hud--touch .hud__net { position: absolute; left: 50%; transform: translateX(-50%); bottom: 3.6em; margin: 0; }
+
+.touch {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  --pad-r: env(safe-area-inset-right);
+  --pad-b: env(safe-area-inset-bottom);
+  --pad-l: env(safe-area-inset-left);
+}
+
+/* The stick lives anywhere in the left half, below the scoreboard. */
+.touch__zone {
+  position: absolute;
+  left: 0;
+  top: 3.2em;
+  bottom: 0;
+  width: 46%;
+  pointer-events: auto;
+  touch-action: none;
+}
+.touch__base {
+  position: absolute;
+  left: calc(var(--pad-l) + 92px);
+  bottom: calc(var(--pad-b) + 84px);
+  width: 104px;
+  height: 104px;
+  margin: -52px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  background: rgba(11, 16, 26, 0.22);
+  pointer-events: none;
+}
+.touch__base--live { border-color: rgba(255, 255, 255, 0.55); background: rgba(11, 16, 26, 0.32); }
+.touch__knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.34);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+/* One hit target for the whole cluster; see touchControls.ts for why. */
+.touch__pad {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: calc(var(--pad-r) + 196px);
+  height: calc(var(--pad-b) + 200px);
+  pointer-events: auto;
+  touch-action: none;
+}
+.touch__btn {
+  position: absolute;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  line-height: 1.05;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(11, 16, 26, 0.42);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+.touch__sub { font-size: 10px; opacity: 0.7; text-transform: uppercase; }
+.touch__btn--down { background: rgba(244, 197, 66, 0.55); border-color: #f4c542; color: #0a0d14; }
+.touch__btn--shoot { width: 78px; height: 78px; right: calc(var(--pad-r) + 16px); bottom: calc(var(--pad-b) + 18px); border-color: rgba(255, 143, 143, 0.75); }
+.touch__btn--turbo { width: 64px; height: 64px; right: calc(var(--pad-r) + 22px); bottom: calc(var(--pad-b) + 104px); border-color: rgba(93, 219, 132, 0.75); }
+.touch__btn--pass { width: 66px; height: 66px; right: calc(var(--pad-r) + 104px); bottom: calc(var(--pad-b) + 12px); }
+.touch__btn--switchPlayer { width: 52px; height: 52px; right: calc(var(--pad-r) + 110px); bottom: calc(var(--pad-b) + 92px); font-size: 11px; }
+.touch__btn--shoot.touch__btn--down,
+.touch__btn--turbo.touch__btn--down { border-color: #f4c542; }
+
+.touch__menu {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 6px);
+  right: calc(var(--pad-r) + 8px);
+  width: 44px;
+  height: 44px;
+  border-radius: 0.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(11, 16, 26, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/*
+ * "Turn your phone." Pure CSS, so it tracks the rotation with no listener and
+ * cannot disagree with the layout. Only during a match — the menus are fine
+ * upright — and only on a phone-sized touchscreen, so a narrow desktop window
+ * is never told to rotate a monitor.
+ */
+.hud__rotate {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 9, 14, 0.94);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  text-align: center;
+  padding: 1.5em;
+  pointer-events: auto;
+}
+.hud__rotate h2 { font-family: Impact, 'Arial Black', sans-serif; font-size: 1.8em; margin: 0; color: var(--accent); }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 600px) {
+  .hud__rotate { display: flex; }
+}
 `;

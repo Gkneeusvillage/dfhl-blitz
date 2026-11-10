@@ -118,7 +118,7 @@ export class ControlsScene extends Phaser.Scene {
     const active = this.router.activeDevice;
     this.write(
       this.deviceLine,
-      `Active device: ${active === 'gamepad' ? 'controller' : 'keyboard'}` +
+      `Active device: ${active === 'gamepad' ? 'controller' : active === 'touch' ? 'touchscreen' : 'keyboard'}` +
         (this.router.gamepad.windowFocused
           ? ''
           : '   ·   this window is not focused, so the controller is frozen — click the game'),
