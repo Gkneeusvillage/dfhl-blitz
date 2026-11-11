@@ -7,7 +7,7 @@
  * only entry point honest.
  */
 
-import { AI, CHECKING, PUCK, RINK, SHOOTING } from '../tuning.js';
+import { AI, PUCK, RINK, SHOOTING } from '../tuning.js';
 import { attackDirection, attackingGoalX, clamp, defendingGoalX, distance } from '../rink.js';
 import { quantizeAxis } from '../types.js';
 import type { PlayerInput, SkaterSimState, TeamSide } from '../types.js';
@@ -241,21 +241,96 @@ function carrierInput(ctx: SimContext, skater: SkaterSimState): PlayerInput {
   return input;
 }
 
-/** A teammate has it: get open on the far side of the carrier's lane. */
+/**
+ * Is this skater the one who goes to the net?
+ *
+ * Of the carrier's two linemates, the one further up the ice is the forward and
+ * the other trails. Both linemates are counted whoever is driving them, so a CPU
+ * skater takes whichever job the human beside him has left open. Ties break on
+ * slot, which keeps the answer independent of array order.
+ */
+function isForwardSupport(ctx: SimContext, skater: SkaterSimState, carrier: SkaterSimState): boolean {
+  const dir = attackDirection(skater.side);
+  for (const mate of ctx.state.skaters) {
+    if (mate === skater || mate === carrier || mate.side !== skater.side || !mate.onIce) continue;
+    const ahead = (mate.x - skater.x) * dir;
+    if (ahead > 0 || (ahead === 0 && mate.slot < skater.slot)) return false;
+  }
+  return true;
+}
+
+/** How much room the nearest opponent leaves around the line from a to b, in feet. */
+function laneRoom(
+  ctx: SimContext,
+  side: TeamSide,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): number {
+  let room = Infinity;
+  for (const other of ctx.state.skaters) {
+    if (!other.onIce || other.side === side || other.stun > 0) continue;
+    const near = sweepClosest(ax, ay, bx - ax, by - ay, other.x, other.y);
+    if (near.distance < room) room = near.distance;
+  }
+  return room;
+}
+
+/**
+ * A teammate has it: one man to the net, one man behind the play, and both of
+ * them out from behind whoever is covering them.
+ *
+ * The forward heads for the weak-side post — the far side of the net from the
+ * carrier — which is where a pass across becomes a one-timer. The trailer sits
+ * behind and to the weak side: the outlet when the carrier is closed down, and
+ * the one skater between a turnover and his own net.
+ *
+ * Then each looks at the lane from the carrier to where he means to stand. If a
+ * defender is sitting in it, he slides to whichever side opens it up. Standing
+ * in the right place behind a defender is not being open.
+ */
 function supportInput(ctx: SimContext, skater: SkaterSimState, carrier: SkaterSimState): PlayerInput {
   const tick = ctx.state.tick;
   const goalX = attackingGoalX(skater.side);
-  const towardGoal = Math.sign(goalX - carrier.x) || 1;
+  const dir = attackDirection(skater.side);
 
-  // Sit ahead of the carrier and on the opposite side of the ice, which is what
-  // makes the cross-crease one-timer available.
-  const side = skater.y >= carrier.y ? 1 : -1;
-  const targetX = clamp(
-    carrier.x + towardGoal * AI.supportDistance * 0.5,
-    -RINK.goalLineX + 4,
-    RINK.goalLineX - 4,
-  );
-  const targetY = clamp(carrier.y + side * AI.supportOffset, -RINK.halfWidth + 6, RINK.halfWidth - 6);
+  // The weak side is the far side from the carrier. With the carrier on the
+  // centre line there is no far side, so each skater keeps the one he is on.
+  const carrierSide = Math.abs(carrier.y) > 4 ? Math.sign(carrier.y) : skater.y >= carrier.y ? -1 : 1;
+  const weak = -carrierSide;
+
+  let targetX: number;
+  let targetY: number;
+  if (isForwardSupport(ctx, skater, carrier)) {
+    const slotX = goalX - dir * AI.slotDepth;
+    // Run ahead of the carrier until the slot, then hold it rather than
+    // skating on into the end boards.
+    const leadX = carrier.x + dir * AI.forwardLead;
+    targetX = (slotX - leadX) * dir < 0 ? slotX : leadX;
+    targetY = weak * AI.slotOffset;
+  } else {
+    targetX = carrier.x - dir * AI.trailDistance;
+    targetY = carrier.y * 0.4 + weak * AI.trailOffset;
+  }
+
+  // Get out from behind the coverage: try a step to either side and take it
+  // only if it is clearly better, so a skater does not dither between two
+  // nearly equal spots.
+  const baseRoom = laneRoom(ctx, skater.side, carrier.x, carrier.y, targetX, targetY);
+  let bestY = targetY;
+  let bestRoom = baseRoom + AI.laneShiftGain;
+  for (const shift of [-AI.laneShift, AI.laneShift]) {
+    const y = targetY + shift;
+    const room = laneRoom(ctx, skater.side, carrier.x, carrier.y, targetX, y);
+    if (room > bestRoom) {
+      bestRoom = room;
+      bestY = y;
+    }
+  }
+
+  targetX = clamp(targetX, -RINK.goalLineX + 4, RINK.goalLineX - 4);
+  targetY = clamp(bestY, -RINK.halfWidth + 6, RINK.halfWidth - 6);
 
   const input = steer(tick, targetX, targetY, skater);
   input.turbo =
@@ -276,7 +351,7 @@ function chaseInput(ctx: SimContext, skater: SkaterSimState): PlayerInput {
   if (
     carrier !== null &&
     carrier.side !== skater.side &&
-    distance(skater.x, skater.y, carrier.x, carrier.y) < CHECKING.checkRadius &&
+    distance(skater.x, skater.y, carrier.x, carrier.y) < AI.checkDistance &&
     ctx.rng.chance(AI.checkUrge)
   ) {
     input.pass = true;
@@ -389,7 +464,35 @@ export function aiInput(ctx: SimContext, skater: SkaterSimState): PlayerInput {
   const puckTarget = state.puck.carrierId === null ? interceptPoint(ctx) : { x: state.puck.x, y: state.puck.y };
   const chaser = electChaser(ctx, skater.side, puckTarget.x, puckTarget.y);
   if (chaser === skater) return chaseInput(ctx, skater);
+  // Nobody has it: stay behind the puck rather than conceding the ice to it.
+  if (carrier === null) return safetyInput(ctx, skater);
   return postUpInput(ctx, skater, chaser);
+}
+
+/**
+ * The puck is loose and somebody else is going for it: hold behind it.
+ *
+ * Marking a man makes sense when the other side has the puck. With nobody on it,
+ * dropping back to the crease gives up sixty feet of ice for nothing — and when
+ * the chaser wins the race, his nearest teammate is at the wrong end of the rink.
+ * Sitting a pass-length behind the puck is close enough to join the rush and
+ * still goal-side if the race is lost.
+ */
+function safetyInput(ctx: SimContext, skater: SkaterSimState): PlayerInput {
+  const dir = attackDirection(skater.side);
+  const ownGoalX = defendingGoalX(skater.side);
+  const puck = laggedPuck(ctx);
+
+  // Never deeper than the defensive post: behind the puck, but not in the net.
+  const postX = ownGoalX + dir * AI.markGoalSideDistance;
+  const wantX = puck.x - dir * AI.safetyDistance;
+  const targetX = (wantX - postX) * dir < 0 ? postX : wantX;
+  const targetY = clamp(puck.y * 0.4, -RINK.halfWidth + 6, RINK.halfWidth - 6);
+
+  const input = steer(ctx.state.tick, targetX, targetY, skater);
+  input.turbo =
+    skater.turbo > AI.turboMinMeter && distance(skater.x, skater.y, targetX, targetY) > AI.turboDistance;
+  return input;
 }
 
 /**

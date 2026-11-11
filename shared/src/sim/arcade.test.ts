@@ -23,7 +23,7 @@ import { resolveGoalieSave, tryCoverLoosePuck, updateGoalie } from './goalie.js'
 import { driveSkater, moveSkater } from './skater.js';
 import { speedOf } from './physics.js';
 import { Rng } from '../rng.js';
-import { GOALIE, PUCK, RINK, SKATER, TICK_RATE } from '../tuning.js';
+import { CHECKING, GOALIE, PUCK, RINK, SKATER, TICK_RATE } from '../tuning.js';
 import { quantizeAxis } from '../types.js';
 import type {
   GameSimState,
@@ -431,17 +431,76 @@ describe('a body check', () => {
     expect(victim.stun).toBeGreaterThan(0);
   });
 
-  it('needs real closing speed — a gentle lean is a poke, not a hit', () => {
-    // `minImpactSpeed` is what stops the check button being a permanent stun gun.
+  it('needs real closing speed — standing beside him is a shove, not a hit', () => {
+    // `minImpactSpeed` is what stops the check button being a permanent stun gun:
+    // contact without speed still does something, but a fraction as much.
+    const hard = collision();
+    attemptDefensiveAction(hard.ctx, hard.defender);
+
     const { ctx, state, defender, victim } = collision();
     defender.vx = 0;
+    attemptDefensiveAction(ctx, defender);
+
+    // Off the puck and off his stride...
+    expect(state.puck.carrierId).toBeNull();
+    expect(victim.stun).toBeGreaterThan(0);
+    expect(ctx.events.some((event) => event.type === 'hit')).toBe(true);
+    // ...but up again in under half the time, having gone under half as far.
+    expect(victim.stun).toBeLessThan(hard.victim.stun * 0.5);
+    expect(victim.vx).toBeLessThan(hard.victim.vx * 0.5);
+    // And it does not go in the box score as a hit.
+    expect(state.stats[defender.playerId].hits).toBe(0);
+    expect(hard.state.stats[hard.defender.playerId].hits).toBe(1);
+  });
+
+  it('works skating alongside — matching his speed is not a reason to miss', () => {
+    // The reported bug: beside the man, same speed, button pressed, nothing.
+    const { ctx, state, defender, victim } = collision();
+    placeInOpenIce(victim, 0, 3);
+    defender.vx = 0.4;
+    victim.vx = 0.4;
+
+    attemptDefensiveAction(ctx, defender);
+
+    expect(victim.stun).toBeGreaterThan(0);
+    expect(state.puck.carrierId).toBeNull();
+  });
+
+  it('does not land on a man the checker is skating away from', () => {
+    const { ctx, defender, victim } = collision();
+    // Flying apart at well over the impact speed: contact, so a shove, but the
+    // old any-direction rule called this a full check.
+    defender.vx = -0.4;
+    defender.facing = 0;
+
+    attemptDefensiveAction(ctx, defender);
+
+    const full = collision();
+    attemptDefensiveAction(full.ctx, full.defender);
+    expect(victim.stun).toBeLessThan(full.victim.stun);
+  });
+
+  it('cannot hit somebody behind the checker', () => {
+    const { ctx, state, defender, victim } = collision();
+    placeInOpenIce(victim, -3, 0);
+    defender.facing = 0;
+    defender.vx = 0.4;
+    state.puck.carrierId = null;
 
     attemptDefensiveAction(ctx, defender);
 
     expect(victim.stun).toBe(0);
     expect(ctx.events.some((event) => event.type === 'hit')).toBe(false);
-    // The puck may still be poked away, but the man is left standing.
-    expect(state.puck.carrierId === null || state.puck.carrierId === victim.id).toBe(true);
+  });
+
+  it('does not spend a full cooldown on a press with nobody in reach', () => {
+    const { ctx, state, defender, victim } = collision();
+    placeInOpenIce(victim, 30, 0);
+    state.puck.x = victim.x;
+
+    attemptDefensiveAction(ctx, defender);
+
+    expect(defender.actionCooldown).toBeLessThan(CHECKING.pokeCooldownTicks / 2);
   });
 });
 

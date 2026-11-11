@@ -173,11 +173,14 @@ export function knockDown(
   skater: SkaterSimState,
   impulseX: number,
   impulseY: number,
+  /** Share of the full stun to serve; a shove is a fraction of a hit. */
+  stunFactor = 1,
 ): void {
   const attrs = skaterAttrs(ctx.config, skater);
   skater.vx += impulseX;
   skater.vy += impulseY;
   // Tougher skaters get up faster, so the stun range is interpolated in reverse.
-  skater.stun = Math.round(lerpAttr(attrs.checking, CHECKING.stunTicksLow, CHECKING.stunTicksHigh));
+  const full = lerpAttr(attrs.checking, CHECKING.stunTicksLow, CHECKING.stunTicksHigh);
+  skater.stun = Math.max(1, Math.round(full * stunFactor));
   skater.windup = 0;
 }

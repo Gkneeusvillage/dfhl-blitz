@@ -161,8 +161,33 @@ export const HANDLING = {
 } as const;
 
 export const CHECKING = {
-  /** Closing speed required to register a real check rather than a bump. */
-  minImpactSpeed: 0.26,
+  /**
+   * Speed at which the checker must be CLOSING ON the victim — measured along
+   * the line between them — for the hit to be a full body check.
+   *
+   * This used to be the size of the relative velocity in any direction, which
+   * got two things wrong at once. Skating beside the man you wanted to hit is a
+   * relative speed of nearly zero, so the button did nothing in the one place a
+   * player actually presses it; and two skaters flying apart had plenty, so a
+   * check could land on somebody the checker was moving away from.
+   */
+  minImpactSpeed: 0.2,
+  /**
+   * A shove: what the button does inside `checkRadius` without that speed.
+   *
+   * Pressing Hit beside an opponent and seeing nothing at all reads as a broken
+   * button. So contact always does something — the man is knocked off the puck
+   * and off his stride — but for a fraction of the time and the distance. The
+   * big hit still has to be skated into; this is only what stops the button
+   * from being silent.
+   */
+  shoveImpulseFactor: 0.45,
+  shoveStunFactor: 0.4,
+  /**
+   * Widest angle between the checker's facing and the victim, as a cosine.
+   * -0.35 is about 110 degrees: beside you counts, behind you does not.
+   */
+  checkFacingCos: -0.35,
   /** Impulse applied to the checked skater, scaled by the checker's `checking`. */
   impulseLow: 0.55,
   impulseHigh: 1.05,
@@ -171,9 +196,19 @@ export const CHECKING = {
   stunTicksHigh: 22,
   /** Ticks before the checker may check again. */
   cooldownTicks: 30,
-  /** Reach of a poke check. */
-  pokeRadius: 3.4,
+  /**
+   * Reach of a poke check: a stick and a lean, so it is LONGER than a body
+   * check. At the old 3.4 it sat inside `checkRadius` and was only ever reached
+   * as the consolation for a check that lacked speed.
+   */
+  pokeRadius: 6,
   pokeCooldownTicks: 22,
+  /**
+   * Cooldown for a press with nobody in reach at all. Short, because a full
+   * poke cooldown spent on thin air is how a player presses a beat early,
+   * arrives, presses again and gets nothing.
+   */
+  whiffCooldownTicks: 8,
   /** Chance a poke check strips the puck, scaled by the defender's `defense`. */
   pokeStripChanceLow: 0.25,
   pokeStripChanceHigh: 0.7,
@@ -574,8 +609,51 @@ export const AI = {
   laneClearance: 2.4,
   /** Chance per tick a defender throws a check or reaches in with a poke. */
   checkUrge: 0.09,
+  /**
+   * How close the AI gets before it throws a check, centre to centre.
+   *
+   * Tighter than `CHECKING.checkRadius`, which is the most generous distance a
+   * check can land from. Two skaters touching are 3.2 ft apart, so at the full
+   * 4.2 a CPU hit connected across a foot of clear ice — and a remote skater is
+   * drawn a tenth of a second behind where the server has him, which widened
+   * the gap on screen further. The player saw himself knocked over by somebody
+   * who had not arrived yet.
+   */
+  checkDistance: 3.5,
   /** How far off the puck's line to the net a supporting AI skater sets up. */
   supportOffset: 16,
+
+  /**
+   * Off-puck attack. With a teammate carrying, the two others split into a
+   * forward who goes to the net and a trailer who stays behind the play.
+   *
+   * They used to both set up level with the carrier, 16 ft either side of him,
+   * and follow him around the ice like outriders: nobody ever went to the net,
+   * so there was nobody to pass to in front of it, and nobody stayed back, so a
+   * turnover was a breakaway.
+   */
+  /** How far ahead of the carrier the forward runs, until he reaches the slot. */
+  forwardLead: 26,
+  /** How far out from the goal line the forward sets up once he is there. */
+  slotDepth: 13,
+  /** How far off the net's centre line the forward stands: the weak-side post. */
+  slotOffset: 9,
+  /** How far behind the carrier the trailer sits. */
+  trailDistance: 16,
+  /** How far to the weak side of the carrier the trailer sits. */
+  trailOffset: 12,
+  /**
+   * How far a supporting skater will slide sideways to get out from behind a
+   * defender, and how much clearer the new lane must be to bother moving.
+   */
+  laneShift: 8,
+  laneShiftGain: 1.5,
+  /**
+   * Loose puck: how far behind it the skater who is NOT chasing holds. He used
+   * to skate all the way back to his own crease whenever the puck came free,
+   * even when it came free in the other team's end.
+   */
+  safetyDistance: 24,
   /** A carrier with an opponent this close is considered pressured and looks to move it. */
   pressureDistance: 7,
 } as const;

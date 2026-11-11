@@ -191,12 +191,23 @@ export function releasePass(ctx: SimContext, passer: SkaterSimState): boolean {
 // Checks
 // ---------------------------------------------------------------------------
 
+/**
+ * The opponent a check would land on: the nearest one within `radius` who is
+ * not behind the checker.
+ */
 function nearestOpponent(ctx: SimContext, skater: SkaterSimState, radius: number): SkaterSimState | null {
   let best: SkaterSimState | null = null;
   let bestDist = radius;
+  const faceX = Math.cos(skater.facing);
+  const faceY = Math.sin(skater.facing);
   for (const other of ctx.state.skaters) {
     if (other.side === skater.side || !other.onIce || other.stun > 0) continue;
     const dist = distance(skater.x, skater.y, other.x, other.y);
+    // You hit what is in front of you or beside you, not what is behind you.
+    if (dist > 1e-3) {
+      const along = ((other.x - skater.x) * faceX + (other.y - skater.y) * faceY) / dist;
+      if (along < CHECKING.checkFacingCos) continue;
+    }
     if (dist < bestDist) {
       bestDist = dist;
       best = other;
@@ -228,8 +239,16 @@ function jarPuckLoose(ctx: SimContext, victim: SkaterSimState): void {
 /**
  * The `pass` button when the skater does not have the puck.
  *
- * Close and closing fast is a body check; otherwise it is a poke, which is the
- * safer play and the only one a slow defender can reliably land.
+ * Three outcomes, by distance and by how hard the checker is arriving:
+ *
+ *   - in contact and closing fast  -> a body check: down, and a long way
+ *   - in contact, not closing      -> a shove: off the puck, briefly off his feet
+ *   - a stick-length away          -> a poke at the carrier's puck, which may miss
+ *
+ * Contact always does something. It did not used to: without enough speed the
+ * press fell through to a poke, the poke only ever worked on the carrier, and
+ * a failed poke shows nothing — so the commonest press in the game, beside a
+ * man you have skated up to, was silent.
  */
 export function attemptDefensiveAction(ctx: SimContext, defender: SkaterSimState): void {
   if (defender.actionCooldown > 0 || defender.stun > 0) return;
@@ -238,39 +257,44 @@ export function attemptDefensiveAction(ctx: SimContext, defender: SkaterSimState
 
   const victim = nearestOpponent(ctx, defender, CHECKING.checkRadius);
   if (victim !== null) {
-    const closing =
-      Math.sqrt(
-        (defender.vx - victim.vx) * (defender.vx - victim.vx) +
-          (defender.vy - victim.vy) * (defender.vy - victim.vy),
-      );
-    if (closing >= CHECKING.minImpactSpeed) {
-      const magnitude = lerpAttr(attrs.checking, CHECKING.impulseLow, CHECKING.impulseHigh);
-      const dx = victim.x - defender.x;
-      const dy = victim.y - defender.y;
-      const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      knockDown(ctx, victim, (dx / len) * magnitude, (dy / len) * magnitude);
-      jarPuckLoose(ctx, victim);
-      defender.actionCooldown = CHECKING.cooldownTicks;
-      state.stats[defender.playerId].hits++;
-      ctx.events.push({
-        type: 'hit',
-        tick: state.tick,
-        actorId: defender.id,
-        targetId: victim.id,
-        side: defender.side,
-        x: victim.x,
-        y: victim.y,
-        power: magnitude,
-      });
-      return;
-    }
+    const dx = victim.x - defender.x;
+    const dy = victim.y - defender.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    // Speed along the line between them, positive when the gap is shrinking.
+    const closing = (defender.vx - victim.vx) * ux + (defender.vy - victim.vy) * uy;
+    const full = closing >= CHECKING.minImpactSpeed;
+
+    const magnitude =
+      lerpAttr(attrs.checking, CHECKING.impulseLow, CHECKING.impulseHigh) *
+      (full ? 1 : CHECKING.shoveImpulseFactor);
+    knockDown(ctx, victim, ux * magnitude, uy * magnitude, full ? 1 : CHECKING.shoveStunFactor);
+    jarPuckLoose(ctx, victim);
+    defender.actionCooldown = CHECKING.cooldownTicks;
+    // Only the real thing goes on the scoresheet.
+    if (full) state.stats[defender.playerId].hits++;
+    ctx.events.push({
+      type: 'hit',
+      tick: state.tick,
+      actorId: defender.id,
+      targetId: victim.id,
+      side: defender.side,
+      x: victim.x,
+      y: victim.y,
+      power: magnitude,
+    });
+    return;
   }
 
   // Poke: reach for the carrier's puck.
   const carrier = puckCarrier(state);
-  defender.actionCooldown = CHECKING.pokeCooldownTicks;
-  if (carrier === null || carrier.side === defender.side) return;
-  if (distance(defender.x, defender.y, carrier.x, carrier.y) > CHECKING.pokeRadius) return;
+  const inReach =
+    carrier !== null &&
+    carrier.side !== defender.side &&
+    distance(defender.x, defender.y, carrier.x, carrier.y) <= CHECKING.pokeRadius;
+  defender.actionCooldown = inReach ? CHECKING.pokeCooldownTicks : CHECKING.whiffCooldownTicks;
+  if (!inReach || carrier === null) return;
 
   const chance = lerpAttr(attrs.defense, CHECKING.pokeStripChanceLow, CHECKING.pokeStripChanceHigh);
   if (ctx.rng.chance(chance)) {
